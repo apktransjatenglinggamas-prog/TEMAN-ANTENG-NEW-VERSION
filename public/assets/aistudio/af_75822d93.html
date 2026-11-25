@@ -7,7 +7,7 @@
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;padding:0;width:100%}
-body{font-family:Roboto,'Segoe UI',Arial,sans-serif;background-color:#eef2f7;background-image:radial-gradient(#cbd5e1 1px, transparent 1px);background-size:22px 22px}
+body{font-family:Roboto,'Segoe UI',Arial,sans-serif;background-color:transparent;background-image:radial-gradient(#cbd5e1 1px, transparent 1px);background-size:22px 22px}
 .c{width:100%;display:flex;flex-direction:column}
 .s{display:none;flex-direction:column;padding:18px 16px 32px;position:relative;max-width:480px;width:100%;margin:0 auto;min-height:100vh}
 .s.a{display:flex}
@@ -152,7 +152,7 @@ to{opacity:1;transform:translateY(0)}
 
 <!-- S1: LOGIN -->
 <div id="s1" class="s a">
-<img src="https://i.ibb.co.com/xq9KTq7D/IMG-20261116-WA0038.jpg" class="logo" alt="Logo Teman Anteng">
+<img src="/assets/aistudio/20261125_131721_bfe665be.jpg" class="logo" alt="Logo Teman Anteng">
 <h1>TEMAN ANTENG<br><small style="font-weight:700;color:#475569;display:block;margin-top:4px">Teknologi Manajemen Transjateng</small><small style="font-weight:400;font-size:14px!important;color:#64748b">BRT Trans Jateng</small></h1>
 <label>User Name</label><input id="u" placeholder="Masukkan Username" autocomplete="username">
 <label>Password</label><input id="p" type="password" placeholder="Masukkan Password" autocomplete="current-password">
@@ -170,7 +170,7 @@ to{opacity:1;transform:translateY(0)}
 <!-- S2: TIMER -->
 <div id="s2" class="s">
 <button type="button" class="backTop" onclick="show('s1')">⬅️</button>
-<div class="top"><img src="https://i.ibb.co.com/xq9KTq7D/IMG-20261116-WA0038.jpg" style="width:68px;height:68px;border-radius:50%;background:#fff;padding:3px;flex-shrink:0"><div><b id="greet">Selamat Bekerja</b><br><small>Harap isi sesuai keadaan lapangan</small></div></div>
+<div class="top"><img src="/assets/aistudio/20261125_131721_bfe665be.jpg" style="width:68px;height:68px;border-radius:50%;background:#fff;padding:3px;flex-shrink:0"><div><b id="greet">Selamat Bekerja</b><br><small>Harap isi sesuai keadaan lapangan</small></div></div>
 <h2 id="nama" style="text-align:center;margin:10px 0 0;font-size:26px">timer1</h2><p style="text-align:center;margin:0;color:#666;font-size:17px">Petugas Timer</p>
 <label>TANGGAL OPERASIONAL 🔒</label><input type="date" id="tgl" readonly class="lock">
 <div class="row"><div><label>Koridor</label><select id="kor" onchange="upd()"></select></div><div><label>No. Lambung</label><select id="lb" onchange="upd()"></select></div><div><label>Rit Ke</label><select id="rit" onchange="upd()"></select></div></div>
@@ -202,7 +202,7 @@ to{opacity:1;transform:translateY(0)}
 <!-- S4: PPA -->
 <div id="s4" class="s">
 <button type="button" class="backTop" onclick="show('s1')">⬅️</button>
-<div class="topPPA"><img src="https://i.ibb.co.com/xq9KTq7D/IMG-20261116-WA0038.jpg" style="width:68px;height:68px;border-radius:50%;background:#fff;padding:3px;flex-shrink:0"><div><b id="greetPPA">Selamat Bekerja CHANDRA</b><br><small>Validasi setelah bus sampai di POS. Jam validasi tidak boleh lebih cepat dari jam berangkat.</small></div></div>
+<div class="topPPA"><img src="/assets/aistudio/20261125_131721_bfe665be.jpg" style="width:68px;height:68px;border-radius:50%;background:#fff;padding:3px;flex-shrink:0"><div><b id="greetPPA">Selamat Bekerja CHANDRA</b><br><small>Validasi setelah bus sampai di POS. Jam validasi tidak boleh lebih cepat dari jam berangkat.</small></div></div>
 <h2 id="namaPPA" style="text-align:center;margin:10px 0 0;font-size:26px">Chandra</h2><p style="text-align:center;margin:0;color:#666;font-size:17px">Petugas Pengawas Angkutan</p>
 <label>TANGGAL OPERASIONAL 🔒</label><input type="date" id="ppaTgl" readonly class="lock">
 <label>LOKASI POS PPA</label><select id="ppaPos" onchange="onJamPPAChange()"><option value="JOMPO_BK_BP">1. JOMPO (BK-BP)</option><option value="JOMPO_BP_BK">2. JOMPO (BP-BK)</option><option value="PURBALINGGA_BK_BP">3. Purbalingga (BK-BP)</option><option value="PURBALINGGA_BP_BK">4. Purbalingga (BP-BK)</option></select>
@@ -226,7 +226,7 @@ to{opacity:1;transform:translateY(0)}
 <div id="s5" class="s">
 <button type="button" class="backTop" onclick="show('s1')">⬅️</button>
 <div class="topPram">
-<img src="https://i.ibb.co.com/xq9KTq7D/IMG-20261116-WA0038.jpg" style="width:66px;height:66px;border-radius:50%;background:#fff;padding:3px;flex-shrink:0" alt="Logo TransJateng">
+<img src="/assets/aistudio/20261125_131721_bfe665be.jpg" style="width:66px;height:66px;border-radius:50%;background:#fff;padding:3px;flex-shrink:0" alt="Logo TransJateng">
 <div><b id="greetPram">Selamat Bekerja Gogon</b><br><small>Isi data penumpang yang sesuai ya!</small></div>
 </div>
 <h2 id="namaPram" style="text-align:center;margin:12px 0 0;font-size:26px">Gogon</h2>
@@ -347,7 +347,7 @@ Total: <b id="akTotalRit">0</b>
 <!-- Banner Header Kasir -->
 <div class="top-banner">
 <div class="logo-circle">
-<img src="https://i.ibb.co.com/xq9KTq7D/IMG-20261116-WA0038.jpg" alt="Logo TransJateng">
+<img src="/assets/aistudio/20261125_131721_bfe665be.jpg" alt="Logo TransJateng">
 </div>
 <div class="banner-text">
 <h3>Selamat Bekerja Agung PCX</h3>

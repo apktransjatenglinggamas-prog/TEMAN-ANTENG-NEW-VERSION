@@ -20,7 +20,7 @@ export const API_KASIR =
   'https://script.google.com/macros/s/AKfycbwEDQ1co4qBw3b1sYAh8GxFiktvU1Jdt6Q6xq_AQiggdan1UEnqEuNZndXMUCOHY0sEDQ/exec';
 
 export const MASTER_SHEET_ID = '1YV4mBF9uswh2YC5ZLM5aMR_xHS1CzFhFaryTZ-xP8zA';
-export const LOGO_URL = 'https://i.ibb.co.com/xq9KTq7D/IMG-20261116-WA0038.jpg';
+export const LOGO_URL = '/assets/aistudio/20261125_131721_bfe665be.jpg';
 
 export const STORAGE_TIMER_KEY = 'anteng_riwayat';
 export const STORAGE_PPA_KEY = 'anteng_riwayat_ppa';
