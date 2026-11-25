@@ -1,0 +1,2607 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5,viewport-fit=cover">
+<title>TEMAN ANTENG - Teknologi Manajemen Transjateng</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;width:100%}
+body{font-family:'Segoe UI',Arial,sans-serif;background-color:#eef2f7;background-image:radial-gradient(#cbd5e1 1px, transparent 1px);background-size:22px 22px}
+.c{width:100%;display:flex;flex-direction:column}
+.s{display:none;flex-direction:column;padding:18px 16px 32px;position:relative;max-width:480px;width:100%;margin:0 auto;min-height:100vh}
+.s.a{display:flex}
+#s1{background:#fff}
+h1{text-align:center;font-size:30px;margin:8px 0;line-height:1.2}
+h1 small{font-size:17px!important}
+label{display:block;font-size:16px;font-weight:900;margin:14px 0 6px;color:#0f172a}
+input,select{width:100%;padding:16px 12px;border:2.5px solid #222;border-radius:14px;font-size:22px;text-align:center;background:#fff;font-weight:700;color:#111827}
+.b{color:#fff;border:none;width:100%;padding:18px;border-radius:16px;font-weight:900;margin-top:12px;font-size:19px;background:#FF473A;cursor:pointer}
+.b:disabled{opacity:.65;cursor:not-allowed}
+.g{background:#22c55e;font-size:22px}
+.w{background:#25D366;display:block;font-size:19px;text-decoration:none;text-align:center}
+.wa-box{display:none;background:#ecfdf5;border:2px solid #6ee7b7;border-radius:16px;padding:10px;margin-top:12px}
+.wa-box .b.w{margin-top:0}
+.wa-copy-btn{background:#fff;color:#065f46;border:2px solid #10b981;width:100%;padding:12px;border-radius:12px;font-weight:900;font-size:14px;margin-top:8px;cursor:pointer}
+.wa-preview{background:#fff;border:1px solid #a7f3d0;border-radius:10px;padding:10px;margin:8px 0 0;font-family:inherit;font-size:12px;color:#334155;white-space:pre-wrap;word-break:break-word;max-height:150px;overflow-y:auto;line-height:1.45}
+.dup-warn{display:none;background:#fef2f2;border:2px solid #fca5a5;color:#991b1b;padding:10px 12px;border-radius:12px;margin-top:8px;font-weight:900;font-size:13px;text-align:center}
+.k{background:#64748b}
+.o{background:#0ea5e9;display:none}
+.lost{background:#7c3aed;font-size:19px}
+.top{background:#FF473A;color:#fff;padding:18px;border-radius:0 0 22px 22px;display:flex;align-items:center;gap:14px;text-align:left}
+.top b{font-size:26px;line-height:1.2}
+.top small{font-size:17px;line-height:1.3}
+.row{display:flex;gap:8px}
+.row div{flex:1;min-width:0}
+.row input,.row select{font-size:20px;padding:14px 6px}
+.pink{background:#fcf0f0}
+.box{background:#fef9c3;padding:12px;border-radius:14px;margin:8px 0}
+.box input{font-size:22px}
+.lock{background:#e2e8f0!important;color:#334155;border-color:#64748b!important}
+#load{display:none;position:fixed;inset:0;background:rgba(255,255,255,.9);z-index:99;justify-content:center;align-items:center;font-weight:700;font-size:20px}
+#toast{display:none;position:fixed;left:50%;bottom:20px;transform:translateX(-50%);max-width:440px;width:calc(100% - 28px);z-index:250;background:#0f172a;color:#fff;padding:14px 16px;border-radius:14px;font-size:15px;font-weight:700;line-height:1.4;box-shadow:0 8px 24px rgba(15,23,42,.28);text-align:center}
+#toast.ok{background:#065f46;border:1.5px solid #34d399}
+#toast.warn{background:#92400e;border:1.5px solid #fbbf24}
+#toast.err{background:#991b1b;border:1.5px solid #f87171}
+.logo{width:120px;display:block;margin:4px auto}
+.rw{background:#f8fafc;border:2px solid #e2e8f0;border-radius:14px;padding:12px;margin-top:16px}
+.rw-item{background:#fff;border:1.5px solid #cbd5e1;border-radius:12px;padding:12px;margin-top:10px;font-size:15px;line-height:1.4}
+.rw-item b{font-size:16px}
+.st-pending{background:#fef9c3;color:#854d0e;padding:3px 10px;border-radius:20px;font-size:13px;font-weight:900}
+.st-ok{background:#dcfce7;color:#166534;padding:3px 10px;border-radius:20px;font-size:13px;font-weight:900}
+.st-temp{background:#fef9c3;color:#854d0e;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:900}
+.st-err{background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:900}
+.backTop{position:absolute;top:12px;right:12px;z-index:10;background:#0f172a;color:#fff;border:none;border-radius:50%;width:42px;height:42px;font-size:18px;font-weight:900;box-shadow:0 4px 10px rgba(0,0,0,.25);cursor:pointer}
+.lostCard{background:#fff;border:2px solid #ddd6fe;border-radius:16px;padding:14px;margin-top:12px}
+#modalBarang{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;justify-content:center;align-items:center;flex-direction:column;padding:18px}
+#modalBarang img{width:100%;max-width:420px;border-radius:14px;background:#fff}
+
+.topPPA{background:linear-gradient(135deg,#0056b3,#003366);color:#fff;padding:18px;border-radius:0 0 22px 22px;display:flex;align-items:center;gap:14px;text-align:left}
+.topPPA b{font-size:24px;line-height:1.2}
+.topPPA small{font-size:16px;line-height:1.3}
+.bPPA{background:#004080}
+.infoTimer{background:#eff6ff;border:2px solid #bfdbfe;border-radius:14px;padding:12px;margin-top:8px;font-size:16px;line-height:1.5}
+.infoHeadway{background:#f0fdf4;border:2px solid #bbf7d0;border-radius:14px;padding:12px;margin-top:10px;font-size:16px;line-height:1.5;display:none}
+
+/* STYLE PRAMUJASA */
+.topPram{background:linear-gradient(135deg,#10b981,#047857);color:#fff;padding:18px;border-radius:0 0 22px 22px;display:flex;align-items:center;gap:14px;text-align:left;box-shadow:0 4px 12px rgba(16,185,129,.25)}
+.topPram b{font-size:24px;line-height:1.2}
+.topPram small{font-size:16px;line-height:1.3}
+.idPramBox{background:#dcfce7;border:2.5px solid #16a34a;color:#14532d;font-weight:900;font-size:20px;text-align:center}
+.akumCard{background:#f0fdf4;border:2px solid #86efac;border-radius:16px;padding:14px;margin-top:14px}
+.akumTitle{text-align:center;font-size:16px;font-weight:900;color:#166534;margin-bottom:10px}
+.akumSubTitle{font-size:14px;font-weight:900;color:#065f46;margin:12px 0 6px}
+.akumList{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.akumList li{background:#fff;border:1.5px solid #bbf7d0;border-radius:10px;padding:8px 10px;font-size:14px;font-weight:700;color:#0f172a;display:flex;justify-content:space-between;align-items:center}
+.akumTotalBox{margin-top:12px;background:#dcfce7;border:2px solid #22c55e;color:#14532d;padding:12px;border-radius:12px;text-align:center;font-weight:900;font-size:17px}
+.btnTemp{background:#f59e0b;color:#451a03}
+.btnSendPram{background:#10b981;color:#fff}
+
+/* STYLE KASIR & KOLOM MATRIKS */
+.top-banner{background:linear-gradient(135deg,#7c3aed,#5b21b6);color:#ffffff;padding:20px 18px;border-bottom-left-radius:24px;border-bottom-right-radius:24px;display:flex;align-items:center;gap:14px;box-shadow:0 4px 12px rgba(109,40,217,0.25)}
+.logo-circle{width:62px;height:62px;background:#ffffff;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;padding:3px}
+.logo-circle img{width:100%;height:100%;object-fit:contain;border-radius:50%}
+.banner-text h3{margin:0 0 4px 0;font-size:20px;font-weight:900;line-height:1.2}
+.banner-text p{margin:0;font-size:14px;opacity:0.92;font-weight:500}
+.profile-title{text-align:center;margin-bottom:14px}
+.profile-title h2{margin:0;font-size:24px;font-weight:900;color:#111827}
+.profile-title p{margin:3px 0 0 0;font-size:14px;color:#64748b;font-weight:700}
+label.field-label{display:block;font-size:14px;font-weight:900;color:#0f172a;margin:12px 0 6px}
+.row-grid{display:flex;gap:8px}
+.col{flex:1;min-width:0}
+.form-input,.form-select{width:100%;padding:13px 10px;border:2.5px solid #1e293b;border-radius:12px;font-size:18px;text-align:center;background-color:#ffffff;font-weight:800;color:#111827;outline:none}
+.form-select{background-color:#f8fafc}
+.id-perjalanan-box{background-color:#f3e8ff;border:2.5px solid #7c3aed;color:#581c87;font-weight:900;font-size:18px;letter-spacing:0.4px;text-align:center}
+.green-text-input{color:#15803d;font-weight:900;background-color:#f0fdf4;border-color:#16a34a}
+.ringkas-setoran{background:#f8fafc;border:2px solid #cbd5e1;border-radius:14px;padding:12px 14px;margin-top:12px;font-size:14px}
+.ringkas-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;color:#1e293b;font-weight:700}
+.ringkas-row b{font-weight:900}
+.selisih-box{margin-top:8px;padding:10px 12px;border-radius:10px;text-align:center;font-weight:900;font-size:15px;background:#dcfce7;color:#14532d;border:1.5px solid #86efac}
+.matriks-card{background:#ffffff;border:2px solid #cbd5e1;border-radius:16px;padding:12px;margin-top:14px}
+.matriks-title{font-size:15px;font-weight:900;color:#0f172a;text-align:center;margin-bottom:4px}
+.matriks-sub{font-size:12px;font-weight:800;color:#475569;text-align:center;margin-bottom:10px}
+.kat-row-card{background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px;padding:10px;margin-top:8px}
+.kat-row-head{font-size:14px;font-weight:900;color:#1e293b;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
+.kat-mini-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.kat-mini-lbl{display:block;font-size:11px;font-weight:800;color:#475569;margin-bottom:3px}
+.kat-num-input{width:100%;padding:9px 8px;border:2px solid #334155;border-radius:10px;font-size:16px;font-weight:800;text-align:center;background:#fff;color:#0f172a}
+.kat-rp-input{width:100%;padding:9px 8px;border:2px solid #16a34a;border-radius:10px;font-size:14px;font-weight:800;text-align:center;background:#f0fdf4;color:#15803d}
+.sub-box{background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:12px;padding:10px 12px;margin-top:10px;font-size:13px;font-weight:800;color:#1e3a8a}
+.sub-line{display:flex;justify-content:space-between;align-items:center;padding:2px 0}
+.foto-slot-card{background:#ffffff;border:1.5px solid #e9d5ff;border-radius:12px;padding:10px;margin-top:6px}
+.foto-btn-row{display:flex;gap:8px;margin-top:6px}
+.foto-pick-btn{flex:1;padding:9px 8px;border:none;border-radius:10px;font-size:12px;font-weight:900;cursor:pointer;color:#ffffff}
+.foto-cam-btn{background:#7c3aed}
+.foto-gal-btn{background:#0284c7}
+.foto-clr-btn{padding:9px 10px;border:1.5px solid #fca5a5;border-radius:10px;font-size:12px;font-weight:800;cursor:pointer;background:#fef2f2;color:#991b1b}
+.foto-preview-box{margin-top:8px;display:none;align-items:center;gap:10px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:10px;padding:6px}
+.foto-preview-box img{width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid #cbd5e1;background:#fff;flex-shrink:0}
+.foto-preview-meta{font-size:11px;font-weight:700;color:#334155;word-break:break-all}
+.kendala-checkbox-card{background-color:#fef9c3;border:2px solid #facc15;border-radius:14px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:14px}
+.kendala-title{font-size:15px;font-weight:900;color:#111827}
+.kendala-desc{font-size:12px;color:#854d0e;margin-top:2px;font-weight:600}
+.custom-checkbox{width:22px;height:22px;cursor:pointer;accent-color:#ca8a04;flex-shrink:0}
+.pink-kendala-card{display:none;background-color:#fef2f2;border:2px solid #fca5a5;border-radius:14px;padding:12px;margin-top:10px}
+.pink-kendala-card textarea{width:100%;height:72px;border:1.5px solid #fecaca;border-radius:10px;padding:8px 10px;background:#ffffff;font-size:14px;outline:none;color:#991b1b;font-family:inherit;resize:vertical;font-weight:600}
+.btn-green{background-color:#16a34a;color:#ffffff;border:none;width:100%;padding:16px;border-radius:14px;font-size:18px;font-weight:900;cursor:pointer;box-shadow:0 4px 10px rgba(22,163,74,0.22);margin-top:14px}
+.btn-secondary{background-color:#0ea5e9;color:#ffffff;border:none;width:100%;padding:14px;border-radius:14px;font-size:16px;font-weight:900;cursor:pointer;margin-top:10px;display:none}
+.btn-mini-link{background:none;border:none;color:#2563eb;font-weight:900;font-size:13px;text-decoration:underline;cursor:pointer;padding:2px 0;margin-top:4px}
+</style>
+</head>
+<body>
+<div class="c">
+<div id="load">Mengirim ke Database...</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<div id="modalBarang" onclick="tutupBarang()">
+<b id="namaBarangModal" style="color:#fff;font-size:22px;margin-bottom:12px;text-align:center"></b>
+<img id="imgBarang" src="" alt="Foto Barang Tertinggal">
+<button type="button" class="b k" style="max-width:420px;width:100%" onclick="tutupBarang()">TUTUP</button>
+<p style="color:#fff;font-size:14px;margin-top:8px">Klik di mana saja untuk menutup</p>
+</div>
+
+<!-- S1: LOGIN -->
+<div id="s1" class="s a">
+<img src="https://i.ibb.co.com/xq9KTq7D/IMG-20261116-WA0038.jpg" class="logo" alt="Logo Teman Anteng">
+<h1>TEMAN ANTENG<br><small style="font-weight:700;color:#475569;display:block;margin-top:4px">Teknologi Manajemen Transjateng</small><small style="font-weight:400;font-size:14px!important;color:#64748b">BRT Trans Jateng</small></h1>
+<label>User Name</label><input id="u" placeholder="Masukkan Username" autocomplete="username">
+<label>Password</label><input id="p" type="password" placeholder="Masukkan Password" autocomplete="current-password">
+<label>Role</label>
+<select id="r">
+<option value="Timer">Timer</option>
+<option value="PPA">PPA</option>
+<option value="Pramujasa">Pramujasa</option>
+<option value="Kasir">Kasir</option>
+</select>
+<button type="button" id="btnLogin" class="b" onclick="login()">MASUK</button>
+<p id="log" style="font-size:15px;background:#fef9c3;padding:12px;border-radius:8px;text-align:center">⏳ Memuat data USER_LOGIN dari database...</p>
+</div>
+
+<!-- S2: TIMER -->
+<div id="s2" class="s">
+<button type="button" class="backTop" onclick="show('s1')">⬅️</button>
+<div class="top"><img src="https://i.ibb.co.com/xq9KTq7D/IMG-20261116-WA0038.jpg" style="width:68px;height:68px;border-radius:50%;background:#fff;padding:3px;flex-shrink:0" alt="Logo"><div><b id="greet">Selamat Bekerja</b><br><small>Harap isi sesuai keadaan lapangan</small></div></div>
+<h2 id="nama" style="text-align:center;margin:10px 0 0;font-size:26px">timer1</h2><p style="text-align:center;margin:0;color:#666;font-size:17px">Petugas Timer</p>
+<label>TANGGAL OPERASIONAL 🔒</label><input type="date" id="tgl" readonly class="lock">
+<div class="row"><div><label>Koridor</label><select id="kor" onchange="upd()"></select></div><div><label>No. Lambung</label><select id="lb" onchange="upd()"></select></div><div><label>Rit Ke</label><select id="rit" onchange="upd()"></select></div></div>
+<label>POLA OPERASIONAL - PILIH SESUAI HARI INI</label>
+<select id="pola" onchange="upd()"><option value="REGULER">REGULER</option><option value="WEEKEND">WEEKEND</option><option value="LIBUR1">LIBUR1</option><option value="LIBUR2">LIBUR2</option></select>
+<label>TERMINAL AWAL</label><input id="term" readonly class="pink" value="">
+<div style="display:flex;justify-content:space-between;align-items:baseline">
+<label>ID_PERJALANAN 🔑</label>
+<button type="button" class="btn-mini-link" onclick="cekUlangMaster()">🔄 Cek Ulang Master</button>
+</div>
+<input id="idp" readonly class="pink" style="font-weight:900;color:#991b1b;font-size:22px">
+<div id="timerDupWarn" class="dup-warn"></div>
+<div class="row"><div><label>TimeTable <span id="labelJd" style="font-size:12px;color:#475569;font-weight:700"></span></label><input type="time" id="jd" readonly class="pink" onchange="cekTelat()"></div><div><label>Aktual</label><input type="time" id="ak" class="pink" onchange="cekTelat()"></div></div>
+<div class="row"><div><label>TOTAL PNP</label><input type="number" id="tot" value="4" min="0" class="pink"></div><div><label>PNP TRANSIT</label><input type="number" id="tr" value="0" min="0" class="pink"></div><div><label>PNP TURUN</label><input type="number" id="tur" value="0" min="0" class="pink"></div></div>
+<label>KENDALA BUS</label><select id="ken" class="pink"><option value="-" selected>Tidak Ada Kendala</option><option>Mesin Mogok</option><option>Ban Bocor</option><option>AC Mati</option><option>Rem Bermasalah</option><option>Pintu Rusak</option><option>Macet Parah</option><option>Kecelakaan</option><option>Lainnya</option></select>
+<label>KETERANGAN <span id="wajib" style="color:#dc2626;font-size:14px;display:none">* WAJIB DIISI KARENA JAM BERBEDA</span></label><div class="box" id="boxcat"><input id="cat" placeholder="Catatan..." oninput="cekTelat()" onchange="cekTelat()" style="border:none;background:transparent"></div>
+<button type="button" id="btnSimpanTimer" class="b g" onclick="simpan()">SIMPAN KE DATABASE</button>
+<div id="waBoxTimer" class="wa-box">
+<a id="bwa" class="b w" href="#" target="_blank" rel="noopener noreferrer">📲 KIRIM WA GROUP</a>
+<button type="button" class="wa-copy-btn" onclick="salinTeksWA(pesan)">📋 SALIN PESAN WA (CADANGAN)</button>
+<pre id="waPrevTimer" class="wa-preview"></pre>
+</div>
+<button type="button" id="bnext" class="b o" onclick="resetForm()">➡️ INPUT BUS BERIKUTNYA</button>
+<button type="button" class="b lost" onclick="cariLost();show('s3')">BARANG TERTINGGAL</button>
+<div style="text-align:center;margin-top:18px"><span id="linkLihat" onclick="toggleRiwayat()" style="color:#2563eb;font-weight:900;font-size:17px;text-decoration:underline;cursor:pointer">Lihat Riwayat Validasi</span><span id="jmlRwMini" style="font-size:14px;background:#FF473A;color:#fff;padding:4px 10px;border-radius:20px;margin-left:8px">0 data</span></div>
+<div id="boxRiwayat" class="rw" style="display:none"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:18px">📋 RIWAYAT VALIDASI</b><span id="jmlRw" style="font-size:14px;background:#FF473A;color:#fff;padding:4px 12px;border-radius:20px">0 data</span></div><div id="listRw"></div><div style="text-align:center;margin-top:10px"><span onclick="toggleRiwayat()" style="color:#64748b;font-weight:700;font-size:15px;text-decoration:underline;cursor:pointer">▲ Sembunyikan Riwayat</span></div></div>
+</div>
+
+<!-- S3: BARANG TERTINGGAL -->
+<div id="s3" class="s">
+<button type="button" class="backTop" onclick="backFromLost()">⬅️</button>
+<h1 style="margin-top:40px">BARANG TERTINGGAL<br><small style="font-weight:400;font-size:17px">Barang Tertinggal Penumpang</small></h1>
+<label>CARI BARANG</label><input id="cariLost" placeholder="Cth: Dompet / HP / Tas..." oninput="cariLost()">
+<label>CARI BERDASARKAN TANGGAL</label><input type="date" id="tglLost" oninput="cariLost()">
+<div id="listLost"></div><button type="button" class="b k" onclick="backFromLost()">⬅️ KEMBALI</button>
+</div>
+
+<!-- S4: PPA -->
+<div id="s4" class="s">
+<button type="button" class="backTop" onclick="show('s1')">⬅️</button>
+<div class="topPPA"><img src="https://i.ibb.co.com/xq9KTq7D/IMG-20261116-WA0038.jpg" style="width:68px;height:68px;border-radius:50%;background:#fff;padding:3px;flex-shrink:0" alt="Logo"><div><b id="greetPPA">Selamat Bekerja</b><br><small>Validasi setelah bus sampai di POS. Jam validasi tidak boleh lebih cepat dari jam berangkat.</small></div></div>
+<h2 id="namaPPA" style="text-align:center;margin:10px 0 0;font-size:26px">PPA</h2><p style="text-align:center;margin:0;color:#666;font-size:17px">Petugas Pengawas Angkutan</p>
+<label>TANGGAL OPERASIONAL 🔒</label><input type="date" id="ppaTgl" readonly class="lock">
+<label>LOKASI POS PPA</label><select id="ppaPos" onchange="onJamPPAChange()"><option value="JOMPO_BK_BP">1. JOMPO (BK-BP)</option><option value="JOMPO_BP_BK">2. JOMPO (BP-BK)</option><option value="PURBALINGGA_BK_BP">3. Purbalingga (BK-BP)</option><option value="PURBALINGGA_BP_BK">4. Purbalingga (BP-BK)</option></select>
+<div class="row"><div><label>Koridor</label><select id="ppaKor" onchange="updPPA()"></select></div><div><label>No. Lambung</label><select id="ppaLb" onchange="updPPA()"></select></div><div><label>Rit Ke</label><select id="ppaRit" onchange="updPPA()"></select></div></div>
+<label>ID_PERJALANAN 🔑</label><input id="ppaIdp" readonly class="pink" style="font-weight:900;color:#1e3a8a;font-size:22px">
+<div id="ppaDupWarn" class="dup-warn"></div>
+<div id="infoTimer" class="infoTimer" style="display:none"></div>
+<div class="row"><div><label>All Pnp</label><input type="number" id="ppaAll" min="0" value="0"></div><div><label>Pnp Naik</label><input type="number" id="ppaNaik" min="0" value="0"></div><div><label>Pnp Turun</label><input type="number" id="ppaTurun" min="0" value="0"></div></div>
+<label>JAM TIBA DI POS PPA (MANUAL)</label><input type="time" id="ppaJam" class="pink" onchange="onJamPPAChange()" oninput="onJamPPAChange()">
+<div id="peringatanJam" style="display:none;background:#fef2f2;border:2px solid #fecaca;color:#991b1b;padding:12px;border-radius:12px;margin-top:10px;font-weight:700;font-size:16px"></div>
+<div id="infoHeadway" class="infoHeadway"></div>
+<label>KETERANGAN POS</label><div class="box"><input id="ppaKet" placeholder="Catatan pengawas..." style="border:none;background:transparent"></div>
+<button type="button" id="btnSimpanPPA" class="b bPPA" onclick="simpanPPA()">SIMPAN DAN KIRIM VALIDASI</button>
+<div id="waBoxPPA" class="wa-box">
+<a id="bwaPPA" class="b w" href="#" target="_blank" rel="noopener noreferrer">📲 KIRIM KE WA GROUP</a>
+<button type="button" class="wa-copy-btn" onclick="salinTeksWA(pesanPPA)">📋 SALIN PESAN WA (CADANGAN)</button>
+<pre id="waPrevPPA" class="wa-preview"></pre>
+</div>
+<button type="button" id="bnextPPA" class="b o" onclick="resetPPA()" style="display:none">➡️ INPUT BUS BERIKUTNYA</button>
+<button type="button" class="b lost" onclick="cariLost();show('s3')">BARANG TERTINGGAL</button>
+<div style="text-align:center;margin-top:18px"><span id="linkLihatPPA" onclick="toggleRiwayatPPA()" style="color:#2563eb;font-weight:900;font-size:17px;text-decoration:underline;cursor:pointer">Lihat Riwayat Validasi</span><span id="jmlRwMiniPPA" style="font-size:14px;background:#004080;color:#fff;padding:4px 10px;border-radius:20px;margin-left:8px">0 data</span></div>
+<div id="boxRiwayatPPA" class="rw" style="display:none"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:18px">📋 RIWAYAT VALIDASI</b><span id="jmlRwPPA" style="font-size:14px;background:#004080;color:#fff;padding:4px 12px;border-radius:20px">0 data</span></div><div id="listRwPPA"></div><div style="text-align:center;margin-top:10px"><span onclick="toggleRiwayatPPA()" style="color:#64748b;font-weight:700;font-size:15px;text-decoration:underline;cursor:pointer">▲ Sembunyikan Riwayat</span></div></div>
+</div>
+
+<!-- S5: PRAMUJASA (MODEL KOLOM TUNAI & NON-TUNAI SEPERTI KASIR) -->
+<div id="s5" class="s">
+<button type="button" class="backTop" onclick="show('s1')">⬅️</button>
+<div class="topPram">
+<img src="https://i.ibb.co.com/xq9KTq7D/IMG-20261116-WA0038.jpg" style="width:66px;height:66px;border-radius:50%;background:#fff;padding:3px;flex-shrink:0" alt="Logo TransJateng">
+<div><b id="greetPram">Selamat Bekerja</b><br><small>Isi jumlah penumpang Tunai &amp; Non-Tunai di kolom kategori halte!</small></div>
+</div>
+<h2 id="namaPram" style="text-align:center;margin:12px 0 0;font-size:26px">Pramujasa</h2>
+<p style="text-align:center;margin:0;color:#64748b;font-size:16px;font-weight:700">Petugas Pramujasa</p>
+
+<label>TANGGAL OPERASIONAL 🔒</label>
+<input type="date" id="pramTgl" readonly class="lock">
+
+<div class="row">
+<div><label>Koridor</label><select id="pramKor" onchange="updPram(true)"></select></div>
+<div><label>No. Lambung</label><select id="pramLb" onchange="updPram(true)"></select></div>
+<div><label>Rit Ke</label><select id="pramRit" onchange="updPram(true)"></select></div>
+</div>
+
+<label style="text-align:center">ID_PERJALANAN 🔑</label>
+<input id="pramIdp" readonly class="idPramBox">
+<div id="pramDupWarn" class="dup-warn"></div>
+
+<div class="row">
+<div>
+<label>Shift</label>
+<select id="pramShift">
+<option value="SHIFT 1">Shift 1</option>
+<option value="SHIFT 2">Shift 2</option>
+</select>
+</div>
+<div>
+<label>Jam Tiba Halte</label>
+<input type="time" id="pramJamTiba" class="pink" data-manual="0" oninput="this.setAttribute('data-manual','1')" onchange="this.setAttribute('data-manual','1')">
+</div>
+</div>
+
+<label>Pramudi (Dari MASTER_PRAMUDI)</label>
+<select id="pramPramudi">
+<option value="">Memuat daftar Pramudi...</option>
+</select>
+
+<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin:14px 0 6px">
+<label style="margin:0">Nama Halte <span id="pramHalteCount" style="font-size:13px;color:#475569;font-weight:700"></span></label>
+<span id="pramArahInfo" style="font-size:13px;color:#047857;font-weight:900"></span>
+</div>
+<div id="pramArahManualBox" class="row" style="display:none;margin-bottom:8px">
+<div><button type="button" id="btnArahBP" onclick="setArahManualPram('BP')" style="width:100%;padding:10px;border-radius:10px;border:2px solid #047857;background:#10b981;color:#fff;font-weight:900;font-size:13px;cursor:pointer">Arah BP (Bulupitu)</button></div>
+<div><button type="button" id="btnArahBK" onclick="setArahManualPram('BK')" style="width:100%;padding:10px;border-radius:10px;border:2px solid #cbd5e1;background:#fff;color:#334155;font-weight:900;font-size:13px;cursor:pointer">Arah BK (Bukateja)</button></div>
+</div>
+<select id="pramHalte" onchange="refreshAkumulasiPram()">
+<option value="Halte Bukateja" data-id="HT01">1. Halte Bukateja</option>
+<option value="Halte SMA Bukateja" data-id="HT02">2. Halte SMA Bukateja</option>
+<option value="Halte Yuro" data-id="HT03">3. Halte Yuro</option>
+<option value="Halte T. Purbalingga" data-id="HT04">4. Halte T. Purbalingga</option>
+</select>
+
+<!-- KOLOM TUNAI & NON-TUNAI PER KATEGORI SEPERTI KASIR -->
+<div class="matriks-card">
+<div class="matriks-title">👥 PENUMPANG HALTE INI (PER KATEGORI)</div>
+<div class="matriks-sub">Isi kolom Tunai &amp; Non-Tunai secara langsung untuk setiap kategori</div>
+
+<div class="kat-row-card">
+<div class="kat-row-head"><span>Umum</span></div>
+<div class="kat-mini-grid">
+<div><span class="kat-mini-lbl">Pnp Tunai</span><input type="number" id="pramTunaiUmum" class="kat-num-input" min="0" value="0" oninput="hitungHaltePram()" onchange="hitungHaltePram()"></div>
+<div><span class="kat-mini-lbl">Pnp Non-Tunai</span><input type="number" id="pramNonTunaiUmum" class="kat-num-input" min="0" value="0" oninput="hitungHaltePram()" onchange="hitungHaltePram()"></div>
+</div>
+</div>
+
+<div class="kat-row-card">
+<div class="kat-row-head"><span>Buruh</span></div>
+<div class="kat-mini-grid">
+<div><span class="kat-mini-lbl">Pnp Tunai</span><input type="number" id="pramTunaiBuruh" class="kat-num-input" min="0" value="0" oninput="hitungHaltePram()" onchange="hitungHaltePram()"></div>
+<div><span class="kat-mini-lbl">Pnp Non-Tunai</span><input type="number" id="pramNonTunaiBuruh" class="kat-num-input" min="0" value="0" oninput="hitungHaltePram()" onchange="hitungHaltePram()"></div>
+</div>
+</div>
+
+<div class="kat-row-card">
+<div class="kat-row-head"><span>Pelajar</span></div>
+<div class="kat-mini-grid">
+<div><span class="kat-mini-lbl">Pnp Tunai</span><input type="number" id="pramTunaiPelajar" class="kat-num-input" min="0" value="0" oninput="hitungHaltePram()" onchange="hitungHaltePram()"></div>
+<div><span class="kat-mini-lbl">Pnp Non-Tunai</span><input type="number" id="pramNonTunaiPelajar" class="kat-num-input" min="0" value="0" oninput="hitungHaltePram()" onchange="hitungHaltePram()"></div>
+</div>
+</div>
+
+<div class="kat-row-card">
+<div class="kat-row-head"><span>Lansia</span></div>
+<div class="kat-mini-grid">
+<div><span class="kat-mini-lbl">Pnp Tunai</span><input type="number" id="pramTunaiLansia" class="kat-num-input" min="0" value="0" oninput="hitungHaltePram()" onchange="hitungHaltePram()"></div>
+<div><span class="kat-mini-lbl">Pnp Non-Tunai</span><input type="number" id="pramNonTunaiLansia" class="kat-num-input" min="0" value="0" oninput="hitungHaltePram()" onchange="hitungHaltePram()"></div>
+</div>
+</div>
+
+<div class="kat-row-card">
+<div class="kat-row-head"><span>Disabilitas</span></div>
+<div class="kat-mini-grid">
+<div><span class="kat-mini-lbl">Pnp Tunai</span><input type="number" id="pramTunaiDisabilitas" class="kat-num-input" min="0" value="0" oninput="hitungHaltePram()" onchange="hitungHaltePram()"></div>
+<div><span class="kat-mini-lbl">Pnp Non-Tunai</span><input type="number" id="pramNonTunaiDisabilitas" class="kat-num-input" min="0" value="0" oninput="hitungHaltePram()" onchange="hitungHaltePram()"></div>
+</div>
+</div>
+
+<div class="kat-row-card">
+<div class="kat-row-head"><span>Veteran</span></div>
+<div class="kat-mini-grid">
+<div><span class="kat-mini-lbl">Pnp Tunai</span><input type="number" id="pramTunaiVeteran" class="kat-num-input" min="0" value="0" oninput="hitungHaltePram()" onchange="hitungHaltePram()"></div>
+<div><span class="kat-mini-lbl">Pnp Non-Tunai</span><input type="number" id="pramNonTunaiVeteran" class="kat-num-input" min="0" value="0" oninput="hitungHaltePram()" onchange="hitungHaltePram()"></div>
+</div>
+</div>
+
+<div class="sub-box">
+<div class="sub-line"><span>Subtotal Tunai Halte Ini:</span><b id="pramSubTunai">0 org</b></div>
+<div class="sub-line"><span>Subtotal Non-Tunai Halte Ini:</span><b id="pramSubNonTunai">0 org</b></div>
+<div class="sub-line" style="margin-top:4px;padding-top:4px;border-top:1px solid #bfdbfe;color:#991b1b"><span>Total Penumpang Halte Ini:</span><b id="totalHalteBox">0 org</b></div>
+</div>
+</div>
+
+<label>Penumpang Turun di Halte Ini</label>
+<input type="number" id="pramTurun" min="0" value="0" class="pink">
+
+<label>Keterangan (Opsional)</label>
+<input type="text" id="pramKet" placeholder="Catatan halte..." style="font-size:18px;padding:14px">
+
+<!-- AKUMULASI TOTAL SELAMA 1 RIT -->
+<div class="akumCard">
+<div class="akumTitle">📊 AKUMULASI TOTAL SELAMA 1 RIT</div>
+
+<div class="akumSubTitle">● Rincian pnp Tunai</div>
+<ul class="akumList">
+<li><span>Umum</span><b id="tUmum">0</b></li>
+<li><span>Lansia</span><b id="tLansia">0</b></li>
+<li><span>Pelajar</span><b id="tPelajar">0</b></li>
+<li><span>Buruh</span><b id="tBuruh">0</b></li>
+<li><span>Disabilitas</span><b id="tDisabilitas">0</b></li>
+<li><span>Veteran</span><b id="tVeteran">0</b></li>
+</ul>
+
+<div class="akumSubTitle">● Rincian pnp Non Tunai</div>
+<ul class="akumList">
+<li><span>Umum</span><b id="ntUmum">0</b></li>
+<li><span>Lansia</span><b id="ntLansia">0</b></li>
+<li><span>Pelajar</span><b id="ntPelajar">0</b></li>
+<li><span>Buruh</span><b id="ntBuruh">0</b></li>
+<li><span>Disabilitas</span><b id="ntDisabilitas">0</b></li>
+<li><span>Veteran</span><b id="ntVeteran">0</b></li>
+</ul>
+
+<div class="akumTotalBox">
+Total: <b id="akTotalRit">0</b>
+</div>
+</div>
+
+<button type="button" id="btnSimpanTempPram" class="b btnTemp" onclick="simpanPram('TEMP')">💾 SIMPAN SEMENTARA (Halte Ini)</button>
+<div style="text-align:center;margin-top:10px">
+<span id="linkLihatSementaraPram" onclick="toggleSementaraPram()" style="color:#b45309;font-weight:900;font-size:15px;text-decoration:underline;cursor:pointer">Lihat Transaksi Sementara</span>
+<span id="jmlSementaraPram" style="font-size:13px;color:#475569;font-weight:700;margin-left:6px">(0 halte sementara)</span>
+</div>
+<div id="boxSementaraPram" class="rw" style="display:none;background:#fffbeb;border-color:#fcd34d;margin-top:8px">
+<div style="display:flex;justify-content:space-between;align-items:center">
+<b id="judulSementaraPram" style="font-size:15px;color:#78350f">TRANSAKSI SEMENTARA PER HALTE</b>
+<span id="jmlSementaraPramBox" style="font-size:12px;font-weight:800;color:#92400e">0 halte</span>
+</div>
+<div id="listSementaraPram"></div>
+</div>
+<button type="button" id="btnKirimPram" class="b btnSendPram" onclick="simpanPram('VALID')">🚀 VALIDASI &amp; KIRIM (Database)</button>
+<div id="waBoxPram" class="wa-box">
+<a id="bwaPram" class="b w" href="#" target="_blank" rel="noopener noreferrer">📲 KIRIM KE WA GROUP</a>
+<button type="button" class="wa-copy-btn" onclick="salinTeksWA(pesanPram)">📋 SALIN PESAN WA (CADANGAN)</button>
+<pre id="waPrevPram" class="wa-preview"></pre>
+</div>
+<button type="button" id="bnextPram" class="b o" onclick="resetFormPram()">➡️ INPUT HALTE / BUS BERIKUTNYA</button>
+<button type="button" class="b lost" onclick="cariLost();show('s3')">BARANG TERTINGGAL</button>
+
+<div style="text-align:center;margin-top:18px">
+<span id="linkLihatPram" onclick="toggleRiwayatPram()" style="color:#2563eb;font-weight:900;font-size:17px;text-decoration:underline;cursor:pointer">Lihat Riwayat Pramujasa</span>
+<span id="jmlRwMiniPram" style="font-size:14px;background:#059669;color:#fff;padding:4px 10px;border-radius:20px;margin-left:8px">0 data</span>
+</div>
+<div id="boxRiwayatPram" class="rw" style="display:none">
+<div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:18px">📋 RIWAYAT PRAMUJASA</b><span id="jmlRwPram" style="font-size:14px;background:#059669;color:#fff;padding:4px 12px;border-radius:20px">0 data</span></div>
+<div id="listRwPram"></div>
+<div style="text-align:center;margin-top:10px"><span onclick="toggleRiwayatPram()" style="color:#64748b;font-weight:700;font-size:15px;text-decoration:underline;cursor:pointer">▲ Sembunyikan Riwayat</span></div>
+</div>
+</div>
+
+<!-- S6: KASIR -->
+<div id="s6" class="s">
+<button type="button" class="backTop" onclick="show('s1')">⬅️</button>
+<div class="top-banner">
+<div class="logo-circle">
+<img src="https://i.ibb.co.com/xq9KTq7D/IMG-20261116-WA0038.jpg" alt="Logo TransJateng">
+</div>
+<div class="banner-text">
+<h3>Selamat Bekerja</h3>
+<p>Isi data setoran &amp; rekonsiliasi dengan teliti ya!</p>
+</div>
+</div>
+
+<div class="form-body">
+<div class="profile-title">
+<h2 id="namaKasir">Kasir</h2>
+<p>Petugas Admin Kasir</p>
+</div>
+
+<label class="field-label">TANGGAL OPERASIONAL 🔒</label>
+<input type="date" id="kasirTgl" class="form-input lock" readonly>
+
+<div class="row-grid">
+<div class="col">
+<label class="field-label">Koridor</label>
+<select id="kasirKor" class="form-select" onchange="updateIdPerjalananKasir()">
+<option value="KOR01" selected>KOR01</option>
+</select>
+</div>
+<div class="col">
+<label class="field-label">No. Lambung</label>
+<select id="kasirLb" class="form-select" onchange="updateIdPerjalananKasir()"></select>
+</div>
+<div class="col">
+<label class="field-label">Rit Ke</label>
+<select id="kasirRit" class="form-select" onchange="updateIdPerjalananKasir()">
+<option value="R01" selected>R01</option>
+<option value="R02">R02</option>
+<option value="R03">R03</option>
+<option value="R04">R04</option>
+<option value="R05">R05</option>
+<option value="R06">R06</option>
+<option value="R07">R07</option>
+<option value="R08">R08</option>
+</select>
+</div>
+</div>
+
+<label class="field-label" style="text-align:center;">ID_PERJALANAN 🔑</label>
+<input type="text" id="kasirIdp" class="form-input id-perjalanan-box" readonly>
+<div id="kasirDupWarn" class="dup-warn"></div>
+
+<div class="matriks-card">
+<div class="matriks-title">💰 SETORAN PER KATEGORI (RP)</div>
+<div class="matriks-sub">Isi jumlah penumpang per kategori; nominal setoran (Rp) dihitung otomatis sesuai tarif kategori</div>
+
+<div class="kat-row-card">
+<div class="kat-row-head"><span>Umum</span><span>Tarif: Rp 5.000</span></div>
+<div class="kat-mini-grid">
+<div><span class="kat-mini-lbl">Jumlah Pnp Tunai</span><input type="number" id="ksrTunaiPnpUmum" class="kat-num-input" min="0" value="0" oninput="hitungMatriksKasir()" onchange="hitungMatriksKasir()"></div>
+<div><span class="kat-mini-lbl">Jumlah Pnp Non-Tunai</span><input type="number" id="ksrNonTunaiPnpUmum" class="kat-num-input" min="0" value="0" oninput="hitungMatriksKasir()" onchange="hitungMatriksKasir()"></div>
+</div>
+<div class="kat-mini-grid" style="margin-top:6px">
+<div><span class="kat-mini-lbl">Tunai =&gt; Nominal Setoran (Rp)</span><input type="text" id="ksrTunaiRpUmum" class="kat-rp-input" value="Rp 0" readonly></div>
+<div><span class="kat-mini-lbl">Non-Tunai =&gt; Nominal Setoran (Rp)</span><input type="text" id="ksrNonTunaiRpUmum" class="kat-rp-input" value="Rp 0" readonly></div>
+</div>
+</div>
+
+<div class="kat-row-card">
+<div class="kat-row-head"><span>Buruh</span><span>Tarif: Rp 1.000</span></div>
+<div class="kat-mini-grid">
+<div><span class="kat-mini-lbl">Jumlah Pnp Tunai</span><input type="number" id="ksrTunaiPnpBuruh" class="kat-num-input" min="0" value="0" oninput="hitungMatriksKasir()" onchange="hitungMatriksKasir()"></div>
+<div><span class="kat-mini-lbl">Jumlah Pnp Non-Tunai</span><input type="number" id="ksrNonTunaiPnpBuruh" class="kat-num-input" min="0" value="0" oninput="hitungMatriksKasir()" onchange="hitungMatriksKasir()"></div>
+</div>
+<div class="kat-mini-grid" style="margin-top:6px">
+<div><span class="kat-mini-lbl">Tunai =&gt; Nominal Setoran (Rp)</span><input type="text" id="ksrTunaiRpBuruh" class="kat-rp-input" value="Rp 0" readonly></div>
+<div><span class="kat-mini-lbl">Non-Tunai =&gt; Nominal Setoran (Rp)</span><input type="text" id="ksrNonTunaiRpBuruh" class="kat-rp-input" value="Rp 0" readonly></div>
+</div>
+</div>
+
+<div class="kat-row-card">
+<div class="kat-row-head"><span>Pelajar</span><span>Tarif: Rp 1.000</span></div>
+<div class="kat-mini-grid">
+<div><span class="kat-mini-lbl">Jumlah Pnp Tunai</span><input type="number" id="ksrTunaiPnpPelajar" class="kat-num-input" min="0" value="0" oninput="hitungMatriksKasir()" onchange="hitungMatriksKasir()"></div>
+<div><span class="kat-mini-lbl">Jumlah Pnp Non-Tunai</span><input type="number" id="ksrNonTunaiPnpPelajar" class="kat-num-input" min="0" value="0" oninput="hitungMatriksKasir()" onchange="hitungMatriksKasir()"></div>
+</div>
+<div class="kat-mini-grid" style="margin-top:6px">
+<div><span class="kat-mini-lbl">Tunai =&gt; Nominal Setoran (Rp)</span><input type="text" id="ksrTunaiRpPelajar" class="kat-rp-input" value="Rp 0" readonly></div>
+<div><span class="kat-mini-lbl">Non-Tunai =&gt; Nominal Setoran (Rp)</span><input type="text" id="ksrNonTunaiRpPelajar" class="kat-rp-input" value="Rp 0" readonly></div>
+</div>
+</div>
+
+<div class="kat-row-card">
+<div class="kat-row-head"><span>Lansia</span><span>Tarif: Rp 1.000</span></div>
+<div class="kat-mini-grid">
+<div><span class="kat-mini-lbl">Jumlah Pnp Tunai</span><input type="number" id="ksrTunaiPnpLansia" class="kat-num-input" min="0" value="0" oninput="hitungMatriksKasir()" onchange="hitungMatriksKasir()"></div>
+<div><span class="kat-mini-lbl">Jumlah Pnp Non-Tunai</span><input type="number" id="ksrNonTunaiPnpLansia" class="kat-num-input" min="0" value="0" oninput="hitungMatriksKasir()" onchange="hitungMatriksKasir()"></div>
+</div>
+<div class="kat-mini-grid" style="margin-top:6px">
+<div><span class="kat-mini-lbl">Tunai =&gt; Nominal Setoran (Rp)</span><input type="text" id="ksrTunaiRpLansia" class="kat-rp-input" value="Rp 0" readonly></div>
+<div><span class="kat-mini-lbl">Non-Tunai =&gt; Nominal Setoran (Rp)</span><input type="text" id="ksrNonTunaiRpLansia" class="kat-rp-input" value="Rp 0" readonly></div>
+</div>
+</div>
+
+<div class="kat-row-card">
+<div class="kat-row-head"><span>Disabilitas</span><span>Tarif: Rp 1.000</span></div>
+<div class="kat-mini-grid">
+<div><span class="kat-mini-lbl">Jumlah Pnp Tunai</span><input type="number" id="ksrTunaiPnpDisabilitas" class="kat-num-input" min="0" value="0" oninput="hitungMatriksKasir()" onchange="hitungMatriksKasir()"></div>
+<div><span class="kat-mini-lbl">Jumlah Pnp Non-Tunai</span><input type="number" id="ksrNonTunaiPnpDisabilitas" class="kat-num-input" min="0" value="0" oninput="hitungMatriksKasir()" onchange="hitungMatriksKasir()"></div>
+</div>
+<div class="kat-mini-grid" style="margin-top:6px">
+<div><span class="kat-mini-lbl">Tunai =&gt; Nominal Setoran (Rp)</span><input type="text" id="ksrTunaiRpDisabilitas" class="kat-rp-input" value="Rp 0" readonly></div>
+<div><span class="kat-mini-lbl">Non-Tunai =&gt; Nominal Setoran (Rp)</span><input type="text" id="ksrNonTunaiRpDisabilitas" class="kat-rp-input" value="Rp 0" readonly></div>
+</div>
+</div>
+
+<div class="kat-row-card">
+<div class="kat-row-head"><span>Veteran</span><span>Tarif: Rp 1.000</span></div>
+<div class="kat-mini-grid">
+<div><span class="kat-mini-lbl">Jumlah Pnp Tunai</span><input type="number" id="ksrTunaiPnpVeteran" class="kat-num-input" min="0" value="0" oninput="hitungMatriksKasir()" onchange="hitungMatriksKasir()"></div>
+<div><span class="kat-mini-lbl">Jumlah Pnp Non-Tunai</span><input type="number" id="ksrNonTunaiPnpVeteran" class="kat-num-input" min="0" value="0" oninput="hitungMatriksKasir()" onchange="hitungMatriksKasir()"></div>
+</div>
+<div class="kat-mini-grid" style="margin-top:6px">
+<div><span class="kat-mini-lbl">Tunai =&gt; Nominal Setoran (Rp)</span><input type="text" id="ksrTunaiRpVeteran" class="kat-rp-input" value="Rp 0" readonly></div>
+<div><span class="kat-mini-lbl">Non-Tunai =&gt; Nominal Setoran (Rp)</span><input type="text" id="ksrNonTunaiRpVeteran" class="kat-rp-input" value="Rp 0" readonly></div>
+</div>
+</div>
+
+<div class="sub-box">
+<div class="sub-line"><span>Subtotal Pnp Tunai:</span><b id="subTunaiPnp">0 org</b></div>
+<div class="sub-line"><span>Subtotal Setoran Tunai:</span><b id="subTunaiRp">Rp 0</b></div>
+<div class="sub-line" style="margin-top:4px;padding-top:4px;border-top:1px solid #bfdbfe"><span>Subtotal Pnp Non-Tunai:</span><b id="subNonTunaiPnp">0 org</b></div>
+<div class="sub-line"><span>Subtotal Setoran Non-Tunai:</span><b id="subNonTunaiRp">Rp 0</b></div>
+</div>
+</div>
+
+<div>
+<label class="field-label">Nominal Setoran Tunai (Rp)</label>
+<input type="text" id="kasirSetoranTunai" class="form-input green-text-input" value="Rp 0" readonly>
+</div>
+
+<div>
+<label class="field-label">Nominal Setoran Non Tunai (Rp)</label>
+<input type="text" id="kasirSetoranNonTunai" class="form-input green-text-input" value="Rp 0" readonly>
+</div>
+
+<div class="ringkas-setoran">
+<div class="ringkas-row"><span>Total Penumpang Terangkut (Tunai + Non-Tunai)</span><b id="totalPnpRincianBox">0 org</b></div>
+<div class="ringkas-row"><span>Total Setoran Tunai</span><b id="ringkasTunaiRp">Rp 0</b></div>
+<div class="ringkas-row"><span>Total Setoran Non-Tunai</span><b id="ringkasNonTunaiRp">Rp 0</b></div>
+<div class="ringkas-row"><span>Total Setoran (Tunai + Non-Tunai)</span><b id="totalSetoranBox">Rp 0</b></div>
+<div id="statusRekonBox" class="selisih-box">TARIF AKTIF: UMUM Rp 5.000 | LAINNYA Rp 1.000</div>
+</div>
+
+<div class="kendala-checkbox-card">
+<div>
+<div class="kendala-title">Laporan Lost &amp; Found?</div>
+<div class="kendala-desc">Aktifkan jika ada barang tertinggal untuk dicatat ke DB_LOST_FOUND</div>
+</div>
+<input type="checkbox" id="toggle-lf" class="custom-checkbox" onchange="toggleLostAndFound()">
+</div>
+
+<div id="lf-input-box" class="pink-kendala-card">
+<b style="display:block;font-size:15px;color:#7c3aed;margin-bottom:10px;text-align:center">📋 FORMULIR LAPORAN LOST &amp; FOUND (DB_LOST_FOUND)</b>
+
+<div class="row-grid">
+<div class="col">
+<label class="field-label" style="margin-top:4px">Jam Ditemukan</label>
+<input type="time" id="lfJam" class="form-input" style="font-size:16px;padding:8px">
+</div>
+<div class="col">
+<label class="field-label" style="margin-top:4px">Kategori Barang</label>
+<select id="lfKategori" class="form-select" style="font-size:15px;padding:8px">
+<option value="Elektronik">Elektronik</option>
+<option value="Dokumen/Kartu">Dokumen / Kartu</option>
+<option value="Dompet/Uang">Dompet / Uang</option>
+<option value="Pakaian/Tas">Pakaian / Tas</option>
+<option value="Aksesoris">Aksesoris</option>
+<option value="Lainnya" selected>Lainnya</option>
+</select>
+</div>
+</div>
+
+<label class="field-label" style="margin-top:8px">Nama Barang <span style="color:#dc2626">*</span></label>
+<input type="text" id="lfNamaBarang" class="form-input" style="font-size:16px;text-align:left;padding:10px" placeholder="Cth: Dompet Coklat, HP Samsung, Tas Ransel...">
+
+<div class="row-grid" style="margin-top:6px">
+<div class="col"><label class="field-label" style="margin-top:4px">Warna</label><input type="text" id="lfWarna" class="form-input" style="font-size:15px;text-align:left;padding:8px" placeholder="Cth: Hitam, Biru"></div>
+<div class="col"><label class="field-label" style="margin-top:4px">Merek / Brand</label><input type="text" id="lfMerek" class="form-input" style="font-size:15px;text-align:left;padding:8px" placeholder="Cth: Samsung, Eiger"></div>
+</div>
+
+<label class="field-label" style="margin-top:8px">Lokasi Ditemukan</label>
+<input type="text" id="lfLokasi" class="form-input" style="font-size:15px;text-align:left;padding:8px" placeholder="Cth: Kursi Belakang Bus LB01 / Halte Bukateja">
+
+<label class="field-label" style="margin-top:8px">Deskripsi Rinci Barang</label>
+<textarea id="lfDetail" placeholder="Tuliskan ciri-ciri khusus, isi barang, kondisi fisik..."></textarea>
+
+<div class="row-grid" style="margin-top:6px">
+<div class="col">
+<div class="foto-slot-card">
+<label class="field-label" style="margin-top:0">Foto 1 (Kamera / Galeri)</label>
+<input type="file" id="lfFoto1Cam" accept="image/*" capture="environment" style="display:none" onchange="prosesFileFotoKasir(1, this)">
+<input type="file" id="lfFoto1Gal" accept="image/*" style="display:none" onchange="prosesFileFotoKasir(1, this)">
+<div class="foto-btn-row">
+<button type="button" class="foto-pick-btn foto-cam-btn" onclick="bukaSumberFotoKasir(1,'cam')">📷 Kamera</button>
+<button type="button" class="foto-pick-btn foto-gal-btn" onclick="bukaSumberFotoKasir(1,'gal')">🖼️ Galeri</button>
+<button type="button" class="foto-clr-btn" onclick="hapusFotoKasir(1)" title="Hapus Foto 1">✕</button>
+</div>
+<div id="lfFoto1PreviewBox" class="foto-preview-box">
+<img id="lfFoto1Img" src="" alt="Preview Foto 1">
+<div id="lfFoto1Info" class="foto-preview-meta">Belum ada foto</div>
+</div>
+</div>
+</div>
+<div class="col">
+<div class="foto-slot-card">
+<label class="field-label" style="margin-top:0">Foto 2 (Kamera / Galeri)</label>
+<input type="file" id="lfFoto2Cam" accept="image/*" capture="environment" style="display:none" onchange="prosesFileFotoKasir(2, this)">
+<input type="file" id="lfFoto2Gal" accept="image/*" style="display:none" onchange="prosesFileFotoKasir(2, this)">
+<div class="foto-btn-row">
+<button type="button" class="foto-pick-btn foto-cam-btn" onclick="bukaSumberFotoKasir(2,'cam')">📷 Kamera</button>
+<button type="button" class="foto-pick-btn foto-gal-btn" onclick="bukaSumberFotoKasir(2,'gal')">🖼️ Galeri</button>
+<button type="button" class="foto-clr-btn" onclick="hapusFotoKasir(2)" title="Hapus Foto 2">✕</button>
+</div>
+<div id="lfFoto2PreviewBox" class="foto-preview-box">
+<img id="lfFoto2Img" src="" alt="Preview Foto 2">
+<div id="lfFoto2Info" class="foto-preview-meta">Belum ada foto</div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="row-grid" style="margin-top:6px">
+<div class="col"><label class="field-label" style="margin-top:4px">Ditemukan Oleh</label><input type="text" id="lfDitemukanOleh" class="form-input" style="font-size:14px;text-align:left;padding:8px"></div>
+<div class="col"><label class="field-label" style="margin-top:4px">Penerima Barang di POS</label><input type="text" id="lfPenerima" class="form-input" style="font-size:14px;text-align:left;padding:8px" value="Admin Kasir / Kantor Terminal"></div>
+</div>
+
+<div class="row-grid" style="margin-top:6px">
+<div class="col">
+<label class="field-label" style="margin-top:4px">Status Barang</label>
+<select id="lfStatus" class="form-select" style="font-size:14px;padding:8px">
+<option value="DI_KANTOR" selected>DI_KANTOR</option>
+<option value="PROSES_VERIFIKASI">PROSES_VERIFIKASI</option>
+<option value="SUDAH_DIAMBIL">SUDAH_DIAMBIL</option>
+</select>
+</div>
+<div class="col"><label class="field-label" style="margin-top:4px">Catatan L&amp;F</label><input type="text" id="lfCatatan" class="form-input" style="font-size:14px;text-align:left;padding:8px" placeholder="Catatan tambahan..."></div>
+</div>
+</div>
+
+<div>
+<label class="field-label">Keterangan (Opsional)</label>
+<input type="text" id="kasirKet" class="form-input" style="font-size:16px;text-align:left;padding:12px 14px" placeholder="Catatan kasir / rekonsiliasi...">
+</div>
+
+<button type="button" id="btnSimpanKasir" class="btn-green" onclick="simpanKasir()">SIMPAN</button>
+<button type="button" id="btnNextKasir" class="btn-secondary" onclick="resetFormKasir()">➡️ INPUT RIT / ARMADA BERIKUTNYA</button>
+<button type="button" class="b lost" onclick="cariLost();show('s3')" style="margin-top:14px">BARANG TERTINGGAL</button>
+
+<div class="rw">
+<div style="display:flex;justify-content:space-between;align-items:center">
+<b style="font-size:16px">📋 RIWAYAT SETORAN KASIR</b>
+<span id="jmlRwKasir" style="font-size:13px;background:#7c3aed;color:#fff;padding:4px 10px;border-radius:20px;font-weight:800">0 data</span>
+</div>
+<div id="listRwKasir"></div>
+</div>
+</div>
+</div>
+<div style="text-align:center;padding:12px 8px 18px;font-size:11px;color:#64748b;font-weight:600">dibuat Oleh Ali Setiadi</div>
+</div>
+
+<script>
+var API_TIMER = "https://script.google.com/macros/s/AKfycbxqSjF9Skyr6fwDFQijUj4JbnnE2XHedI25u5FxOsCdCel9WR4rAUsxMbB-GeA4HQMu3w/exec";
+var API_PPA = "https://script.google.com/macros/s/AKfycbzw5uzwemAKd7VeJudTWqmxKU2fJ7PPtIvr-foo40TOsEf4OtEX6pJhb75keZOuDN_q/exec";
+var API_PRAMUJASA = "https://script.google.com/macros/s/AKfycbzo5PDy8sVg0jIjbQrIO_W-j_OuedTyJ6aH87lJHwEUT9v65uiyF4w87IR0sN7A-ZfN/exec";
+var API_KASIR = "https://script.google.com/macros/s/AKfycbwEDQ1co4qBw3b1sYAh8GxFiktvU1Jdt6Q6xq_AQiggdan1UEnqEuNZndXMUCOHY0sEDQ/exec";
+var MASTER_SHEET_ID = "1YV4mBF9uswh2YC5ZLM5aMR_xHS1CzFhFaryTZ-xP8zA";
+
+var STORAGE_KEY_PRAM = "anteng_riwayat_pramujasa";
+var STORAGE_KASIR_KEY = "anteng_riwayat_kasir";
+var IDS_TIMER_KEY = "anteng_saved_ids_timer";
+var IDS_PPA_KEY = "anteng_saved_ids_ppa";
+var IDS_PRAM_KEY = "anteng_saved_ids_pramujasa";
+var IDS_KASIR_KEY = "anteng_saved_ids_kasir";
+
+var MASTER_JADWAL = {};
+var MASTER_RIT = {};
+var MASTER_PRAMUDI_LIST = [];
+var MASTER_HALTE_LIST = [];
+var PRAM_MANUAL_ARAH = "BP";
+var MASTER_USER_LOGIN = [];
+var USER_LOGIN_LOADED = false;
+var MEM_STORAGE = {};
+var MEM_SAVED_IDS = {};
+var MEM_PHOTO_CACHE = {};
+var LOST_LIST_CACHE = [];
+var TIMER_SERVER_DUPS = {};
+
+var pesan = "", pesanPPA = "", pesanPram = "", pesanKasir = "", asalLost = "s2";
+var dataTimerPPA = null, previewHeadwayPPA = null;
+var toastTimer = null;
+var FOTO_KASIR_STATE = { 1: "-", 2: "-" };
+var KATEGORI_LIST = ["Umum", "Buruh", "Pelajar", "Lansia", "Disabilitas", "Veteran"];
+var DEFAULT_HALTE_PRAM = [
+  { id: "HT01", koridor: "KOR01", nama: "Halte Bukateja", arah: "BP", status: "AKTIF" },
+  { id: "HT02", koridor: "KOR01", nama: "Halte SMA Bukateja", arah: "BP", status: "AKTIF" },
+  { id: "HT03", koridor: "KOR01", nama: "Halte Yuro", arah: "BP", status: "AKTIF" },
+  { id: "HT04", koridor: "KOR01", nama: "Halte T. Purbalingga", arah: "BP", status: "AKTIF" }
+];
+
+function pad2(n){ n = parseInt(n,10) || 0; return (n < 10 ? "0" : "") + n; }
+
+function escHtml(s){
+  return String(s === null || s === undefined ? "" : s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function tampilToast(msg, tipe){
+  var el = document.getElementById("toast");
+  if(!el) return;
+  el.className = tipe ? tipe : "";
+  el.innerText = msg;
+  el.style.display = "block";
+  if(toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ el.style.display = "none"; }, 3800);
+}
+
+function tampilkanBoxWA(boxId, linkId, prevId, teks){
+  var box = document.getElementById(boxId), link = document.getElementById(linkId), prev = document.getElementById(prevId);
+  if(link) link.href = "https://api.whatsapp.com/send?text=" + encodeURIComponent(teks || "");
+  if(prev) prev.innerText = teks || "";
+  if(box) box.style.display = teks ? "block" : "none";
+}
+
+function sembunyikanBoxWA(boxId, prevId){
+  var box = document.getElementById(boxId), prev = document.getElementById(prevId);
+  if(box) box.style.display = "none";
+  if(prev) prev.innerText = "";
+}
+
+function triggerWhatsAppSendHTML(teks){
+  if(!teks) return;
+  try{
+    var a = document.createElement("a");
+    a.href = "https://api.whatsapp.com/send?text=" + encodeURIComponent(teks);
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }catch(e){}
+}
+
+function salinTeksWA(teks){
+  if(!teks){ tampilToast("Belum ada pesan WA.", "warn"); return; }
+  var fallback = function(){
+    try{
+      var ta = document.createElement("textarea");
+      ta.value = teks; ta.setAttribute("readonly", "");
+      ta.style.position = "fixed"; ta.style.left = "-9999px";
+      document.body.appendChild(ta); ta.select();
+      var ok = document.execCommand("copy");
+      document.body.removeChild(ta);
+      if(ok) tampilToast("Pesan validasi WA berhasil disalin.", "ok");
+      else tampilToast("Gagal menyalin pesan WA.", "err");
+    }catch(e){ tampilToast("Gagal menyalin pesan WA.", "err"); }
+  };
+  if(navigator.clipboard && typeof navigator.clipboard.writeText === "function"){
+    navigator.clipboard.writeText(teks).then(function(){
+      tampilToast("Pesan validasi WA berhasil disalin.", "ok");
+    })["catch"](fallback);
+  } else { fallback(); }
+}
+
+function readSavedIdMapHtml(key){
+  var map = {};
+  var mem = MEM_SAVED_IDS[key];
+  if(mem){ for(var mk in mem){ if(mem[mk]) map[mk] = true; } }
+  try{
+    var raw = localStorage.getItem(key);
+    if(raw){
+      var arr = JSON.parse(raw);
+      if(Object.prototype.toString.call(arr) === "[object Array]"){
+        for(var i=0;i<arr.length;i++){
+          var idStr = String(arr[i] || "").trim();
+          if(idStr) map[idStr] = true;
+        }
+      }
+    }
+  }catch(e){}
+  MEM_SAVED_IDS[key] = map;
+  return map;
+}
+
+function hasSavedIdHtml(key, idPerjalanan){
+  if(!idPerjalanan) return false;
+  var map = readSavedIdMapHtml(key);
+  return !!map[String(idPerjalanan).trim()];
+}
+
+function markSavedIdHtml(key, idPerjalanan){
+  var clean = String(idPerjalanan || "").trim();
+  if(!clean) return;
+  var map = readSavedIdMapHtml(key);
+  if(map[clean]) return;
+  map[clean] = true;
+  MEM_SAVED_IDS[key] = map;
+  var keys = [];
+  for(var k in map){ if(map[k]) keys.push(k); }
+  try{
+    localStorage.setItem(key, JSON.stringify(keys.slice(-500)));
+  }catch(e){}
+}
+
+function stripLfPhotosItem(item, cacheIntoMem){
+  if(!item || !item.lostFoundData) return item;
+  var lf = item.lostFoundData;
+  var idb = lf.ID_BARANG || "";
+  if(cacheIntoMem){
+    if(lf.FOTO_1 && lf.FOTO_1.indexOf("data:image/") === 0 && idb) MEM_PHOTO_CACHE[idb + "_1"] = lf.FOTO_1;
+    if(lf.FOTO_2 && lf.FOTO_2.indexOf("data:image/") === 0 && idb) MEM_PHOTO_CACHE[idb + "_2"] = lf.FOTO_2;
+  }
+  var copyItem = JSON.parse(JSON.stringify(item));
+  if(copyItem.lostFoundData.FOTO_1 && copyItem.lostFoundData.FOTO_1.indexOf("data:image/") === 0) copyItem.lostFoundData.FOTO_1 = "[Tersimpan di Sesi]";
+  if(copyItem.lostFoundData.FOTO_2 && copyItem.lostFoundData.FOTO_2.indexOf("data:image/") === 0) copyItem.lostFoundData.FOTO_2 = "[Tersimpan di Sesi]";
+  return copyItem;
+}
+
+function bacaStorage(key){
+  try{
+    var raw = localStorage.getItem(key);
+    if(raw !== null){
+      var parsed = JSON.parse(raw);
+      if(Object.prototype.toString.call(parsed) === "[object Array]"){
+        MEM_STORAGE[key] = parsed.slice();
+        return parsed.slice();
+      }
+    }
+  }catch(e){}
+  var memArr = MEM_STORAGE[key];
+  return Object.prototype.toString.call(memArr) === "[object Array]" ? memArr.slice() : [];
+}
+
+function tulisStorage(key,val){
+  var arrCopy = Object.prototype.toString.call(val) === "[object Array]" ? val.slice() : [];
+  MEM_STORAGE[key] = arrCopy;
+  try{
+    localStorage.setItem(key, JSON.stringify(arrCopy));
+  }catch(e){
+    try{
+      var keepNewest = arrCopy.map(function(item, idx){
+        return idx === 0 ? item : stripLfPhotosItem(item, true);
+      });
+      localStorage.setItem(key, JSON.stringify(keepNewest));
+    }catch(e2){
+      try{
+        var stripped = arrCopy.map(function(item){
+          return stripLfPhotosItem(item, true);
+        });
+        localStorage.setItem(key, JSON.stringify(stripped));
+      }catch(e3){}
+    }
+  }
+}
+
+function show(id){
+  var sections = document.querySelectorAll(".s");
+  for(var i=0;i<sections.length;i++){ sections[i].classList.remove("a"); }
+  var target = document.getElementById(id);
+  if(target){ target.classList.add("a"); }
+  try{ window.scrollTo(0,0); }catch(e){}
+}
+
+function backFromLost(){ show(asalLost); }
+function tglHariIni(){ var d = new Date(); return d.getFullYear() + "-" + pad2(d.getMonth()+1) + "-" + pad2(d.getDate()); }
+function jamSekarangHHMM(){ var n = new Date(); return pad2(n.getHours()) + ":" + pad2(n.getMinutes()); }
+function timestampSekarang(){
+  var n = new Date();
+  return n.getFullYear() + "-" + pad2(n.getMonth()+1) + "-" + pad2(n.getDate()) + " " + pad2(n.getHours()) + ":" + pad2(n.getMinutes()) + ":" + pad2(n.getSeconds());
+}
+
+function normalisasiJamHHMM(j){
+  if(!j) return "";
+  var cleaned = String(j).trim().replace(/\./g,":");
+  var match = cleaned.match(/(\d{1,2})\s*:\s*(\d{1,2})/);
+  if(!match) return "";
+  var hh = parseInt(match[1],10), mm = parseInt(match[2],10);
+  if(isNaN(hh)||isNaN(mm)||hh<0||hh>23||mm<0||mm>59) return "";
+  return pad2(hh) + ":" + pad2(mm);
+}
+
+function jamKeMenit(j){
+  if(!j) return null;
+  var cleaned = String(j).trim().replace(/\./g,":");
+  var match = cleaned.match(/(\d{1,2})\s*:\s*(\d{1,2})/);
+  if(!match) return null;
+  var jam = parseInt(match[1],10), menit = parseInt(match[2],10);
+  if(isNaN(jam)||isNaN(menit)||jam<0||jam>29||menit<0||menit>59) return null;
+  return jam * 60 + menit;
+}
+
+function isi(id,arr){
+  var el = document.getElementById(id);
+  if(!el) return;
+  var html = "";
+  for(var i=0;i<arr.length;i++) html += '<option value="' + escHtml(arr[i]) + '">' + escHtml(arr[i]) + '</option>';
+  el.innerHTML = html;
+}
+
+var listLB = [];
+for(var k=1;k<=14;k++) listLB.push("LB" + pad2(k));
+listLB.push("LBC01");
+
+isi("kor", ["KOR01"]); isi("lb", listLB); isi("rit", ["R01","R02","R03","R04","R05","R06","R07","R08"]);
+isi("ppaKor", ["KOR01"]); isi("ppaLb", listLB); isi("ppaRit", ["R01","R02","R03","R04","R05","R06","R07","R08"]);
+isi("pramKor", ["KOR01"]); isi("pramLb", listLB); isi("pramRit", ["R01","R02","R03","R04","R05","R06","R07","R08"]);
+
+/* ==================== LOST & FOUND ==================== */
+var DATA_LOST = [
+  {barang:"Dompet Coklat",lambung:"LB03",tgl:"19-11-2026",status:"Di Kantor",foto:""},
+  {barang:"HP Samsung",lambung:"LB07",tgl:"19-11-2026",status:"Di Kantor",foto:""},
+  {barang:"Tas Ransel Hitam",lambung:"LB01",tgl:"18-11-2026",status:"Sudah Diambil",foto:""}
+];
+
+function lihatBarangByIdx(idx){
+  var item = LOST_LIST_CACHE[idx];
+  if(!item) return;
+  var imgEl = document.getElementById("imgBarang");
+  document.getElementById("namaBarangModal").innerText = item.barang + " (" + item.lambung + ")";
+  if(item.foto){
+    imgEl.style.display = "block";
+    imgEl.src = item.foto;
+  } else {
+    imgEl.style.display = "none";
+    imgEl.src = "";
+  }
+  document.getElementById("modalBarang").style.display = "flex";
+}
+function tutupBarang(){ document.getElementById("modalBarang").style.display = "none"; }
+
+function gabungDataLost(){
+  var gabungan = [];
+  var riwKasir = bacaStorage(STORAGE_KASIR_KEY);
+  for(var k=0;k<riwKasir.length;k++){
+    var row = riwKasir[k];
+    if(row && row.adaLostFound && row.lostFoundData){
+      var lf = row.lostFoundData;
+      var tglFmt = (lf.TANGGAL || row.tanggal || "").split("-").reverse().join("-");
+      var f1 = (lf.FOTO_1 && lf.FOTO_1 !== "-" && lf.FOTO_1 !== "[Tersimpan di Sesi]") ? lf.FOTO_1 : (MEM_PHOTO_CACHE[lf.ID_BARANG + "_1"] || "");
+      var f2 = (lf.FOTO_2 && lf.FOTO_2 !== "-" && lf.FOTO_2 !== "[Tersimpan di Sesi]") ? lf.FOTO_2 : (MEM_PHOTO_CACHE[lf.ID_BARANG + "_2"] || "");
+      gabungan.push({
+        barang: lf.NMA_BARANG || "Barang Temuan",
+        lambung: lf.ID_ARMADA || row.noLambung || "-",
+        tgl: tglFmt,
+        status: lf.STATUS || "DI_KANTOR",
+        foto: f1 || f2 || "",
+        lokasi: lf.LOKASI_DITEMUKAN || "-"
+      });
+    }
+  }
+  if(!gabungan.length){
+    for(var i=0;i<DATA_LOST.length;i++) gabungan.push(DATA_LOST[i]);
+  }
+  return gabungan;
+}
+
+function cariLost(){
+  var qEl = document.getElementById("cariLost"), tEl = document.getElementById("tglLost"), lEl = document.getElementById("listLost");
+  if(!qEl||!tEl||!lEl) return;
+  var q = (qEl.value || "").toLowerCase().trim();
+  var tglPilih = tEl.value || "";
+  var sumber = gabungDataLost();
+  var f = [];
+  for(var i=0;i<sumber.length;i++){
+    var d = sumber[i];
+    var cocokKata = !q || d.barang.toLowerCase().indexOf(q) !== -1 || d.lambung.toLowerCase().indexOf(q) !== -1 || (d.lokasi && d.lokasi.toLowerCase().indexOf(q) !== -1);
+    var tglData = d.tgl.split("-").reverse().join("-");
+    var cocokTgl = !tglPilih || tglData === tglPilih;
+    if(cocokKata && cocokTgl) f.push(d);
+  }
+  LOST_LIST_CACHE = f;
+  if(!f.length){ lEl.innerHTML = '<p style="text-align:center;color:#64748b;margin-top:16px">Tidak ditemukan.</p>'; return; }
+  var html = "";
+  for(var j=0;j<f.length;j++){
+    var item = f[j];
+    html += '<div class="lostCard"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px"><div><b style="font-size:20px">' + escHtml(item.barang) + '</b><br><span style="font-size:16px">Bus ' + escHtml(item.lambung) + ' | ' + escHtml(item.tgl) + (item.lokasi ? ' | ' + escHtml(item.lokasi) : '') + '<br>Status: <b>' + escHtml(item.status) + '</b></span></div><span onclick="lihatBarangByIdx(' + j + ')" style="color:#7c3aed;font-weight:900;font-size:16px;text-decoration:underline;white-space:nowrap;cursor:pointer">Lihat Barang</span></div></div>';
+  }
+  lEl.innerHTML = html;
+}
+cariLost();
+
+/* ==================== LOGIN ==================== */
+function normalRoleLogin(roleRaw){
+  var s = String(roleRaw || "").toUpperCase().replace(/[^A-Z0-9_]/g, "");
+  if(s === "TIMER" || s === "TMR") return "TIMER";
+  if(s === "PPA") return "PPA";
+  if(s === "PRAMUJASA" || s === "PJS") return "PRAMUJASA";
+  if(s === "KASIR" || s === "KSR") return "KASIR";
+  return s;
+}
+
+function prosesLoginBerhasil(userObj, roleDipilih){
+  var namaPetugas = (userObj.nama && String(userObj.nama).trim()) ? String(userObj.nama).trim() : userObj.username;
+  var roleNorm = normalRoleLogin(roleDipilih || userObj.role);
+
+  if(roleNorm === "TIMER"){
+    document.getElementById("greet").innerText = "Selamat Bekerja " + namaPetugas + ",";
+    document.getElementById("nama").innerText = namaPetugas;
+    asalLost = "s2"; show("s2"); upd(); tampilRiwayat();
+    tampilToast("Selamat bekerja, " + namaPetugas + "!", "ok");
+    return;
+  }
+  if(roleNorm === "PPA"){
+    document.getElementById("greetPPA").innerText = "Selamat Bekerja " + namaPetugas.toUpperCase();
+    document.getElementById("namaPPA").innerText = namaPetugas;
+    asalLost = "s4"; show("s4"); tampilRiwayatPPA(); updPPA();
+    tampilToast("Selamat bekerja, " + namaPetugas + "!", "ok");
+    return;
+  }
+  if(roleNorm === "PRAMUJASA"){
+    document.getElementById("greetPram").innerText = "Selamat Bekerja " + namaPetugas;
+    document.getElementById("namaPram").innerText = namaPetugas;
+    asalLost = "s5"; show("s5"); updPram(false); tampilRiwayatPram();
+    tampilToast("Selamat bekerja, " + namaPetugas + "!", "ok");
+    return;
+  }
+  if(roleNorm === "KASIR"){
+    var kasirBannerH3 = document.querySelector("#s6 .banner-text h3");
+    if(kasirBannerH3) kasirBannerH3.innerText = "Selamat Bekerja " + namaPetugas;
+    document.getElementById("namaKasir").innerText = namaPetugas;
+    document.getElementById("lfDitemukanOleh").value = namaPetugas;
+    asalLost = "s6"; show("s6");
+    document.getElementById("kasirTgl").value = tglHariIni();
+    isiLambungKasir(); updateIdPerjalananKasir(); tampilRiwayatKasir();
+    tampilToast("Selamat bekerja, " + namaPetugas + "!", "ok");
+    return;
+  }
+  tampilToast("Role " + roleDipilih + " belum tersedia.", "warn");
+}
+
+function cekKredensialDariDaftar(daftar, u, p, rNorm){
+  var uLower = u.toLowerCase(), ketemuUserPass = null;
+  for(var i = 0; i < daftar.length; i++){
+    var row = daftar[i];
+    if(!row || !row.username) continue;
+    if(String(row.username).trim().toLowerCase() === uLower && String(row.password || "").trim() === p){
+      var statusStr = String(row.status || "AKTIF").toUpperCase().trim();
+      if(statusStr && statusStr !== "AKTIF" && statusStr !== "ACTIVE"){
+        return { error: "Akun " + row.username + " berstatus " + statusStr + " (tidak aktif)." };
+      }
+      if(normalRoleLogin(row.role) === rNorm) return { user: row };
+      ketemuUserPass = row;
+    }
+  }
+  if(ketemuUserPass) return { error: "Role tidak sesuai! Akun " + ketemuUserPass.username + " terdaftar sebagai role " + ketemuUserPass.role + "." };
+  return { error: "Username atau Password salah!" };
+}
+
+function login(){
+  var u = (document.getElementById("u").value || "").trim();
+  var p = (document.getElementById("p").value || "").trim();
+  var r = document.getElementById("r").value;
+  var rNorm = normalRoleLogin(r);
+  var logEl = document.getElementById("log"), btnLogin = document.getElementById("btnLogin");
+  if(!u || !p){ tampilToast("Isi username dan password terlebih dahulu.", "warn"); return; }
+
+  if(USER_LOGIN_LOADED && MASTER_USER_LOGIN.length > 0){
+    var hasil = cekKredensialDariDaftar(MASTER_USER_LOGIN, u, p, rNorm);
+    if(hasil.user){
+      logEl.style.background = "#f0fdf4";
+      logEl.innerText = "✅ Login berhasil: " + (hasil.user.nama || hasil.user.username) + " (" + hasil.user.role + ")";
+      prosesLoginBerhasil(hasil.user, r);
+    } else {
+      logEl.style.background = "#fef2f2";
+      logEl.innerText = "❌ " + hasil.error;
+      tampilToast(hasil.error, "err");
+    }
+    return;
+  }
+
+  if(btnLogin) btnLogin.disabled = true;
+  logEl.style.background = "#fef9c3"; logEl.innerText = "⏳ Memverifikasi akun ke sheet USER_LOGIN...";
+  loadUserLoginLangsung(function(ok){
+    if(btnLogin) btnLogin.disabled = false;
+    if(ok && MASTER_USER_LOGIN.length > 0){
+      var h2 = cekKredensialDariDaftar(MASTER_USER_LOGIN, u, p, rNorm);
+      if(h2.user){
+        logEl.style.background = "#f0fdf4";
+        logEl.innerText = "✅ Login berhasil: " + (h2.user.nama || h2.user.username);
+        prosesLoginBerhasil(h2.user, r);
+      } else {
+        logEl.style.background = "#fef2f2"; logEl.innerText = "❌ " + h2.error;
+        tampilToast(h2.error, "err");
+      }
+    } else {
+      logEl.style.background = "#fef2f2"; logEl.innerText = "❌ Gagal memuat data USER_LOGIN.";
+      tampilToast("Gagal terhubung ke database USER_LOGIN.", "err");
+    }
+  });
+}
+
+/* ==================== MASTER & SHEET LOADER ==================== */
+function normalKunciJS(teks){
+  if(!teks) return "";
+  var s = String(teks).toUpperCase();
+  var mLBC = s.match(/LB\s*C\s*0*(\d+)/);
+  var mLB = mLBC ? null : s.match(/LB\s*0*(\d+)/);
+  var mR = s.match(/R\s*0*(\d+)/);
+  if((!mLBC && !mLB) || !mR) return "";
+  var prefix = mLBC ? "LBC" : "LB";
+  var noLB = parseInt((mLBC || mLB)[1], 10);
+  var noR = parseInt(mR[1], 10);
+  return prefix + pad2(noLB) + "-R" + pad2(noR);
+}
+
+function parseGvizJson(txt){
+  if(!txt) return null;
+  var m = txt.match(/setResponse\(([\s\S]+)\)\s*;?\s*$/);
+  if(m && m[1]){ try{ return JSON.parse(m[1]); }catch(e){} }
+  var start = txt.indexOf("{"), end = txt.lastIndexOf("}");
+  if(start !== -1 && end > start){ try{ return JSON.parse(txt.substring(start, end + 1)); }catch(e){} }
+  return null;
+}
+
+function getGvizCellText(cell, preserveFormatted){
+  if(!cell || cell.v === null || cell.v === undefined) return "";
+  if(preserveFormatted && typeof cell.v === "number" && cell.f) return String(cell.f).trim();
+  return String(cell.v).trim();
+}
+
+function loadMasterRitLangsung(){
+  if(!window.fetch) return;
+  fetch("https://docs.google.com/spreadsheets/d/" + MASTER_SHEET_ID + "/gviz/tq?tqx=out:json&sheet=MASTER_RIT&t=" + Date.now())
+    .then(function(r){ return r.text(); })
+    .then(function(txt){
+      var g = parseGvizJson(txt);
+      if(!g || !g.table || !g.table.rows) return;
+      var cols = g.table.cols || [], rows = g.table.rows || [];
+      var idxKor=-1, idxIdRit=-1, idxBus=-1, idxRit=-1, idxArah=-1, idxAwal=-1, idxAkhir=-1;
+      for(var c=0;c<cols.length;c++){
+        var lbl = String((cols[c] && (cols[c].label || cols[c].id)) || "").toUpperCase().trim();
+        if(lbl === "ID_KORIDOR" || lbl === "KORIDOR") idxKor = c;
+        else if(lbl === "ID_RIT") idxIdRit = c;
+        else if(lbl === "KODE_BUS" || lbl === "ID_ARMADA") idxBus = c;
+        else if(lbl === "RIT" || lbl === "ID_RIT_KE") idxRit = c;
+        else if(lbl === "ARAH") idxArah = c;
+        else if(lbl === "TERMINAL_AWAL") idxAwal = c;
+        else if(lbl === "TERMINAL_AKHIR") idxAkhir = c;
+      }
+      var startRow = 0;
+      if(idxIdRit === -1 && rows.length > 0){
+        var fc = (rows[0] && rows[0].c) || [];
+        for(var c2=0;c2<fc.length;c2++){
+          var lbl2 = getGvizCellText(fc[c2]).toUpperCase();
+          if(lbl2 === "ID_KORIDOR" || lbl2 === "KORIDOR") idxKor = c2;
+          else if(lbl2 === "ID_RIT") idxIdRit = c2;
+          else if(lbl2 === "KODE_BUS" || lbl2 === "ID_ARMADA") idxBus = c2;
+          else if(lbl2 === "RIT" || lbl2 === "ID_RIT_KE") idxRit = c2;
+          else if(lbl2 === "ARAH") idxArah = c2;
+          else if(lbl2 === "TERMINAL_AWAL") idxAwal = c2;
+          else if(lbl2 === "TERMINAL_AKHIR") idxAkhir = c2;
+        }
+        if(idxIdRit !== -1 || idxBus !== -1) startRow = 1;
+      }
+      if(idxKor === -1) idxKor = 0;
+      if(idxIdRit === -1) idxIdRit = 1;
+      if(idxBus === -1) idxBus = 2;
+      if(idxRit === -1) idxRit = 3;
+      if(idxArah === -1) idxArah = 4;
+      if(idxAwal === -1) idxAwal = 5;
+      if(idxAkhir === -1) idxAkhir = 6;
+      for(var i=startRow;i<rows.length;i++){
+        var cells = (rows[i] && rows[i].c) || [];
+        var nk = normalKunciJS(getGvizCellText(cells[idxIdRit]) || (getGvizCellText(cells[idxBus]) + "-" + getGvizCellText(cells[idxRit])));
+        if(!nk) continue;
+        var korVal = getGvizCellText(cells[idxKor]).toUpperCase();
+        var arahRaw = getGvizCellText(cells[idxArah]).toUpperCase();
+        var tAwal = getGvizCellText(cells[idxAwal]), tAkhir = getGvizCellText(cells[idxAkhir]);
+        if(!tAkhir && tAwal){
+          var upA = tAwal.toUpperCase();
+          if(upA === "BUKATEJA") tAkhir = "BULUPITU"; else if(upA === "BULUPITU") tAkhir = "BUKATEJA";
+        }
+        var arahVal = arahRaw;
+        if(!arahVal && tAkhir){
+          var upAk = tAkhir.toUpperCase();
+          if(upAk.indexOf("BULUPITU") !== -1) arahVal = "BP";
+          else if(upAk.indexOf("BUKATEJA") !== -1) arahVal = "BK";
+        }
+        if(!MASTER_RIT[nk]) MASTER_RIT[nk] = {pola:"REGULER"};
+        if(korVal) MASTER_RIT[nk].koridor = korVal;
+        if(arahVal) MASTER_RIT[nk].arah = arahVal;
+        if(tAwal) MASTER_RIT[nk].terminal = tAwal;
+        if(tAkhir) MASTER_RIT[nk].terminalAkhir = tAkhir;
+      }
+      try{ upd(); }catch(e){}
+      try{ updPram(true); }catch(e){}
+    })["catch"](function(){});
+}
+
+function loadMasterPramudiLangsung(){
+  if(!window.fetch) return;
+  fetch("https://docs.google.com/spreadsheets/d/" + MASTER_SHEET_ID + "/gviz/tq?tqx=out:json&sheet=MASTER_PRAMUDI&t=" + Date.now())
+    .then(function(r){ return r.text(); })
+    .then(function(txt){
+      var g = parseGvizJson(txt);
+      if(!g || !g.table || !g.table.rows) return;
+      var cols = g.table.cols || [], rows = g.table.rows || [];
+      var idxId=-1, idxNama=-1, idxAwal=-1, idxStatus=-1;
+      for(var c=0;c<cols.length;c++){
+        var lbl = String((cols[c] && (cols[c].label || cols[c].id)) || "").toUpperCase().trim();
+        if(lbl === "ID_PRAMUDI") idxId = c;
+        else if(lbl === "NAMA_PRAMUDI" || lbl === "NAMA") idxNama = c;
+        else if(lbl === "AWAL_OPERASIONAL") idxAwal = c;
+        else if(lbl === "STATUS") idxStatus = c;
+      }
+      var startRow = 0;
+      if(idxId === -1 && idxNama === -1 && rows.length > 0){
+        var fc = (rows[0] && rows[0].c) || [];
+        for(var c2=0;c2<fc.length;c2++){
+          var lbl2 = getGvizCellText(fc[c2]).toUpperCase();
+          if(lbl2 === "ID_PRAMUDI") idxId = c2;
+          else if(lbl2 === "NAMA_PRAMUDI" || lbl2 === "NAMA") idxNama = c2;
+          else if(lbl2 === "AWAL_OPERASIONAL") idxAwal = c2;
+          else if(lbl2 === "STATUS") idxStatus = c2;
+        }
+        if(idxId !== -1 || idxNama !== -1) startRow = 1;
+      }
+      if(idxId === -1) idxId = 0;
+      if(idxNama === -1) idxNama = 1;
+      if(idxAwal === -1) idxAwal = 2;
+      if(idxStatus === -1) idxStatus = 3;
+      var parsed = [];
+      for(var i=startRow;i<rows.length;i++){
+        var cells = (rows[i] && rows[i].c) || [];
+        var id = getGvizCellText(cells[idxId]), nama = getGvizCellText(cells[idxNama]);
+        if(!nama || nama.toUpperCase() === "NAMA_PRAMUDI" || id.toUpperCase() === "ID_PRAMUDI") continue;
+        var st = (getGvizCellText(cells[idxStatus]) || "AKTIF").toUpperCase();
+        if(st && st !== "AKTIF" && st !== "ACTIVE") continue;
+        parsed.push({ id: id || nama, nama: nama, awalOperasional: getGvizCellText(cells[idxAwal]), status: st });
+      }
+      MASTER_PRAMUDI_LIST = parsed;
+      try{ renderDropdownPramudi(); }catch(e){}
+    })["catch"](function(){});
+}
+
+function loadMasterHalteLangsung(){
+  if(!window.fetch) return;
+  fetch("https://docs.google.com/spreadsheets/d/" + MASTER_SHEET_ID + "/gviz/tq?tqx=out:json&sheet=MASTER_HALTE&t=" + Date.now())
+    .then(function(r){ return r.text(); })
+    .then(function(txt){
+      var g = parseGvizJson(txt);
+      if(!g || !g.table || !g.table.rows) return;
+      var cols = g.table.cols || [], rows = g.table.rows || [];
+      var idxId=-1, idxKor=-1, idxNama=-1, idxArah=-1, idxStatus=-1;
+      for(var c=0;c<cols.length;c++){
+        var lbl = String((cols[c] && (cols[c].label || cols[c].id)) || "").toUpperCase().trim();
+        if(lbl === "ID_HALTE") idxId = c;
+        else if(lbl === "ID_KORIDOR" || lbl === "KORIDOR") idxKor = c;
+        else if(lbl === "NAMA_HALTE" || lbl === "NAMA") idxNama = c;
+        else if(lbl === "ARAH") idxArah = c;
+        else if(lbl === "STATUS") idxStatus = c;
+      }
+      var startRow = 0;
+      if(idxId === -1 && idxNama === -1 && rows.length > 0){
+        var fc = (rows[0] && rows[0].c) || [];
+        for(var c2=0;c2<fc.length;c2++){
+          var lbl2 = getGvizCellText(fc[c2]).toUpperCase();
+          if(lbl2 === "ID_HALTE") idxId = c2;
+          else if(lbl2 === "ID_KORIDOR" || lbl2 === "KORIDOR") idxKor = c2;
+          else if(lbl2 === "NAMA_HALTE" || lbl2 === "NAMA") idxNama = c2;
+          else if(lbl2 === "ARAH") idxArah = c2;
+          else if(lbl2 === "STATUS") idxStatus = c2;
+        }
+        if(idxId !== -1 || idxNama !== -1) startRow = 1;
+      }
+      if(idxId === -1) idxId = 0;
+      if(idxKor === -1) idxKor = 1;
+      if(idxNama === -1) idxNama = 2;
+      if(idxArah === -1) idxArah = 3;
+      if(idxStatus === -1) idxStatus = 4;
+      var parsed = [];
+      for(var i=startRow;i<rows.length;i++){
+        var cells = (rows[i] && rows[i].c) || [];
+        var id = getGvizCellText(cells[idxId]), nama = getGvizCellText(cells[idxNama]);
+        if(!id || !nama || id.toUpperCase() === "ID_HALTE" || nama.toUpperCase() === "NAMA_HALTE") continue;
+        var st = (getGvizCellText(cells[idxStatus]) || "AKTIF").toUpperCase();
+        if(st && st !== "AKTIF" && st !== "ACTIVE") continue;
+        parsed.push({
+          id: id,
+          koridor: getGvizCellText(cells[idxKor]).toUpperCase() || "KOR01",
+          nama: nama,
+          arah: getGvizCellText(cells[idxArah]).toUpperCase(),
+          status: st || "AKTIF"
+        });
+      }
+      MASTER_HALTE_LIST = parsed;
+      try{ renderDropdownHaltePram(); }catch(e){}
+    })["catch"](function(){});
+}
+
+function loadUserLoginLangsung(cb){
+  var logEl = document.getElementById("log");
+  if(!window.fetch){ if(typeof cb === "function") cb(false); return; }
+  fetch("https://docs.google.com/spreadsheets/d/" + MASTER_SHEET_ID + "/gviz/tq?tqx=out:json&sheet=USER_LOGIN&t=" + Date.now())
+    .then(function(r){ return r.text(); })
+    .then(function(txt){
+      var g = parseGvizJson(txt);
+      if(!g || !g.table || !g.table.rows){ if(typeof cb === "function") cb(false); return; }
+      var cols = g.table.cols || [], rows = g.table.rows || [];
+      var idxUser=-1, idxPass=-1, idxRole=-1, idxStatus=-1, idxNama=-1;
+      for(var c=0;c<cols.length;c++){
+        var lbl = String((cols[c] && (cols[c].label || cols[c].id)) || "").toUpperCase().trim();
+        if(lbl === "USERNAME" || lbl === "USER_NAME" || lbl === "USER") idxUser = c;
+        else if(lbl === "PASSWORD" || lbl === "PASS" || lbl === "SANDI") idxPass = c;
+        else if(lbl === "ROLE" || lbl === "JABATAN" || lbl === "HAK_AKSES") idxRole = c;
+        else if(lbl === "STATUS") idxStatus = c;
+        else if(lbl === "NAMA" || lbl === "NAMA_PETUGAS" || lbl === "NAMA_LENGKAP" || lbl === "FULL_NAME") idxNama = c;
+      }
+      var dataStart = 0;
+      if(idxUser === -1 && rows.length > 0){
+        var fc = (rows[0] && rows[0].c) || [];
+        for(var c2=0;c2<fc.length;c2++){
+          var lbl2 = getGvizCellText(fc[c2]).toUpperCase();
+          if(lbl2 === "USERNAME" || lbl2 === "USER_NAME" || lbl2 === "USER") idxUser = c2;
+          else if(lbl2 === "PASSWORD" || lbl2 === "PASS" || lbl2 === "SANDI") idxPass = c2;
+          else if(lbl2 === "ROLE" || lbl2 === "JABATAN" || lbl2 === "HAK_AKSES") idxRole = c2;
+          else if(lbl2 === "STATUS") idxStatus = c2;
+          else if(lbl2 === "NAMA" || lbl2 === "NAMA_PETUGAS" || lbl2 === "NAMA_LENGKAP" || lbl2 === "FULL_NAME") idxNama = c2;
+        }
+        if(idxUser !== -1) dataStart = 1;
+      }
+      if(idxUser === -1) idxUser = 0; if(idxPass === -1) idxPass = 1; if(idxRole === -1) idxRole = 2; if(idxStatus === -1) idxStatus = 3;
+      var parsedList = [];
+      for(var i=dataStart;i<rows.length;i++){
+        var cells = (rows[i] && rows[i].c) || [];
+        var uname = getGvizCellText(cells[idxUser]);
+        if(!uname || uname.toUpperCase() === "USERNAME") continue;
+        var upass = getGvizCellText(cells[idxPass], true);
+        var urole = getGvizCellText(cells[idxRole]);
+        var ustatus = getGvizCellText(cells[idxStatus]) || "AKTIF";
+        var unama = idxNama >= 0 ? getGvizCellText(cells[idxNama]) : "";
+        if(!unama){
+          for(var extra=4;extra<cells.length;extra++){
+            var cand = getGvizCellText(cells[extra]);
+            if(cand && cand.indexOf("@") === -1 && isNaN(Number(cand)) && cand.toUpperCase() !== "AKTIF" && cand.toUpperCase() !== "ONLINE" && cand.toUpperCase() !== "OFFLINE"){ unama = cand; break; }
+          }
+        }
+        parsedList.push({ username: uname, password: upass, role: urole, status: ustatus, nama: unama || uname });
+      }
+      if(parsedList.length > 0){
+        MASTER_USER_LOGIN = parsedList; USER_LOGIN_LOADED = true;
+        if(logEl){ logEl.style.background = "#f0fdf4"; logEl.innerText = "✅ Siap... Silakan masukkan Username, Password & Role."; }
+        if(typeof cb === "function") cb(true);
+      } else {
+        if(typeof cb === "function") cb(false);
+      }
+    })["catch"](function(){
+      if(logEl){ logEl.style.background = "#fef2f2"; logEl.innerText = "⚠️ Koneksi database USER_LOGIN tertunda. Klik MASUK untuk mencoba ulang."; }
+      if(typeof cb === "function") cb(false);
+    });
+}
+
+function loadMasterDariSheet(cb){
+  loadUserLoginLangsung();
+  loadMasterRitLangsung();
+  loadMasterPramudiLangsung();
+  loadMasterHalteLangsung();
+  if(!window.fetch){ if(typeof cb === "function") cb(); return; }
+  fetch(API_TIMER + "?action=master&t=" + Date.now())
+    .then(function(r){ return r.text(); })
+    .then(function(txt){
+      var j=null; try{ j=JSON.parse(txt); }catch(e){ return; }
+      if(j.error || !j.jadwal || Object.keys(j.jadwal).length===0) return;
+      var jadwalNorm = {}, rawJadwal = j.jadwal || {}, keys = Object.keys(rawJadwal);
+      for(var i=0;i<keys.length;i++){
+        var k = keys[i], v = rawJadwal[k];
+        if(v && typeof v === "object"){
+          var pola = String(k).toUpperCase().trim();
+          for(var k2 in v){
+            var nk = normalKunciJS(k2); if(!nk) continue;
+            if(!jadwalNorm[pola]) jadwalNorm[pola]={};
+            jadwalNorm[pola][nk] = normalisasiJamHHMM(v[k2]) || v[k2];
+          }
+        } else {
+          var nk2 = normalKunciJS(k); if(!nk2) continue;
+          var daftarPola = j.polaList && j.polaList.length ? j.polaList : ["REGULER","WEEKEND","LIBUR1","LIBUR2"];
+          for(var p=0;p<daftarPola.length;p++){
+            var pp = String(daftarPola[p]).toUpperCase().trim();
+            if(!jadwalNorm[pp]) jadwalNorm[pp]={};
+            jadwalNorm[pp][nk2] = normalisasiJamHHMM(v) || v;
+          }
+        }
+      }
+      var rawRit = j.rit || {};
+      for(var kr in rawRit){
+        var nkR = normalKunciJS(kr);
+        if(nkR && rawRit[kr]){
+          var rObj = rawRit[kr];
+          var tAwal = rObj.terminal || rObj.terminalAwal || rObj["Terminal Awal"] || rObj.TERMINAL_AWAL || "";
+          var tAkhir = rObj.terminalAkhir || rObj["Terminal Akhir"] || rObj.TERMINAL_AKHIR || rObj.tujuan || rObj["Terminal Tujuan"] || "";
+          if(!tAkhir && tAwal){
+            var upAwal = String(tAwal).toUpperCase().trim();
+            if(upAwal === "BUKATEJA") tAkhir = "BULUPITU"; else if(upAwal === "BULUPITU") tAkhir = "BUKATEJA";
+          }
+          if(!MASTER_RIT[nkR]) MASTER_RIT[nkR] = {pola:"REGULER"};
+          if(tAwal) MASTER_RIT[nkR].terminal = tAwal;
+          if(tAkhir && !MASTER_RIT[nkR].terminalAkhir) MASTER_RIT[nkR].terminalAkhir = tAkhir;
+        }
+      }
+      MASTER_JADWAL = jadwalNorm;
+      try{ upd(); }catch(e){}
+      if(typeof cb === "function") cb();
+    })["catch"](function(){ if(typeof cb === "function") cb(); });
+}
+
+function cekUlangMaster(){
+  tampilToast("Memuat ulang data Master...", "");
+  loadMasterDariSheet(function(){
+    upd();
+    tampilToast("Master jadwal diperbarui.", "ok");
+  });
+}
+
+/* ==================== MODUL TIMER ==================== */
+function isTelat(){
+  var jd=document.getElementById("jd").value, ak=document.getElementById("ak").value;
+  if(!jd||!ak) return false;
+  var mJd=jamKeMenit(jd), mAk=jamKeMenit(ak);
+  if(mJd===null||mAk===null) return normalisasiJamHHMM(jd)!==normalisasiJamHHMM(ak);
+  return mJd!==mAk;
+}
+
+function cekTelat(){
+  var telat=isTelat();
+  document.getElementById("wajib").style.display=telat?"inline":"none";
+  document.getElementById("boxcat").style.border=telat?"2px solid #dc2626":"none";
+  var btn=document.getElementById("btnSimpanTimer");
+  if(!btn) return;
+  var idp=document.getElementById("idp").value, data=bacaStorage("anteng_riwayat"), existing=null;
+  for(var i=0;i<data.length;i++){ if(data[i].idPerjalanan===idp){ existing=data[i]; break; } }
+  if((existing && existing.status !== "GAGAL_KIRIM") || hasSavedIdHtml(IDS_TIMER_KEY, idp) || TIMER_SERVER_DUPS[idp]) return;
+  var cat=(document.getElementById("cat").value||"").trim();
+  if(telat && (!cat || cat==="-" || cat.length<3)){
+    btn.innerText="⚠️ ISI KETERANGAN DULU - JAM BERBEDA";
+    btn.style.background="#dc2626";
+  } else {
+    btn.innerText = existing && existing.status === "GAGAL_KIRIM" ? "🔄 KIRIM ULANG KE DATABASE" : "SIMPAN KE DATABASE";
+    btn.style.background="#22c55e";
+  }
+}
+
+function cekServerTimerDup(idp){
+  if(!window.fetch || !idp) return;
+  fetch(API_TIMER + "?idPerjalanan=" + encodeURIComponent(idp) + "&t=" + Date.now())
+    .then(function(r){ return r.text(); })
+    .then(function(txt){
+      try{
+        var tm = JSON.parse(txt);
+        if(tm && !tm.tidakKetemu && !tm.error && (tm.jadwal || tm.aktual || tm.terminal || tm.pnpNaik !== undefined)){
+          TIMER_SERVER_DUPS[idp] = true;
+          if(document.getElementById("idp").value === idp) cekSudahKirim();
+        }
+      }catch(e){}
+    })["catch"](function(){});
+}
+
+function upd(){
+  var kor=document.getElementById("kor").value, lb=document.getElementById("lb").value, rit=document.getElementById("rit").value;
+  var pola=(document.getElementById("pola").value||"REGULER").toUpperCase().trim(), tgl=tglHariIni();
+  document.getElementById("tgl").value=tgl;
+  var idp=kor+"-"+lb+rit+tgl.split("-").join("");
+  document.getElementById("idp").value=idp;
+  var kunci=lb+"-"+rit;
+  var infoRit=MASTER_RIT[kunci]||MASTER_RIT[rit];
+  document.getElementById("term").value = (infoRit && infoRit.terminal) ? infoRit.terminal : "";
+  var jdEl=document.getElementById("jd");
+  if(lb==="LBC01"){
+    jdEl.readOnly=false;
+    document.getElementById("labelJd").innerText="(Manual - Cadangan)";
+    if(!jdEl.value) jdEl.value=jamSekarangHHMM();
+  } else {
+    jdEl.readOnly=true;
+    document.getElementById("labelJd").innerText="(Master - "+pola+")";
+    var jamPola="";
+    if(MASTER_JADWAL[pola] && MASTER_JADWAL[pola][kunci]) jamPola=MASTER_JADWAL[pola][kunci];
+    else if(MASTER_JADWAL[kunci]) jamPola=MASTER_JADWAL[kunci];
+    if(!jamPola){ for(var p in MASTER_JADWAL){ if(MASTER_JADWAL[p] && MASTER_JADWAL[p][kunci]){ jamPola=MASTER_JADWAL[p][kunci]; break; } } }
+    jdEl.value=normalisasiJamHHMM(jamPola);
+  }
+  document.getElementById("ak").value=jamSekarangHHMM();
+  cekTelat(); cekSudahKirim(); cekServerTimerDup(idp);
+}
+
+function buildWaTimerHTML(pl){
+  return "✅ *TEMAN ANTENG - VALIDASI TIMER*\nID_PERJALANAN: "+pl.idPerjalanan+"\nKoridor: "+pl.koridor+"\nPola: "+pl.polaOperasional+"\nTanggal: "+pl.tanggal+"\nPetugas: "+pl.petugas+"\nBus: "+pl.noLambung+" | Rit: "+pl.rit+"\nTerminal: "+pl.terminal+"\nJadwal: "+pl.jadwal+"\nAktual: "+pl.aktual+"\nPNP: Total "+pl.pnpNaik+"\nTransit "+pl.pnpTransit+" | Turun "+pl.pnpTurun+"\nKendala: "+pl.kendala+"\nCatatan: "+pl.catatan;
+}
+
+function syncWaTimerUI(existing){
+  if(pesan){
+    tampilkanBoxWA("waBoxTimer","bwa","waPrevTimer",pesan);
+    return;
+  }
+  if(existing && existing.status !== "GAGAL_KIRIM"){
+    pesan = buildWaTimerHTML(existing);
+    tampilkanBoxWA("waBoxTimer","bwa","waPrevTimer",pesan);
+    return;
+  }
+  sembunyikanBoxWA("waBoxTimer","waPrevTimer");
+}
+
+function cekSudahKirim(){
+  var idp=document.getElementById("idp").value, data=bacaStorage("anteng_riwayat"), existing=null;
+  for(var i=0;i<data.length;i++){
+    if(data[i] && data[i].idPerjalanan && data[i].status !== "GAGAL_KIRIM") markSavedIdHtml(IDS_TIMER_KEY, data[i].idPerjalanan);
+    if(data[i].idPerjalanan===idp) existing=data[i];
+  }
+  var btn=document.getElementById("btnSimpanTimer"), warnEl=document.getElementById("timerDupWarn");
+  if(!btn) return false;
+  var isDup = Boolean((existing && existing.status !== "GAGAL_KIRIM") || hasSavedIdHtml(IDS_TIMER_KEY, idp) || TIMER_SERVER_DUPS[idp]);
+  syncWaTimerUI(existing);
+  if(isDup){
+    btn.innerText="ID_PERJALANAN SUDAH ADA";
+    btn.style.background="#b91c1c";
+    btn.disabled=false;
+    if(warnEl){ warnEl.style.display="block"; warnEl.innerText="⛔ ID_PERJALANAN SUDAH ADA ("+idp+")"; }
+    return true;
+  }
+  if(warnEl) warnEl.style.display="none";
+  btn.disabled=false;
+  cekTelat();
+  return false;
+}
+
+function toggleRiwayat(){
+  var box=document.getElementById("boxRiwayat"), link=document.getElementById("linkLihat");
+  if(box.style.display==="none"){ box.style.display="block"; link.innerText="Sembunyikan Riwayat Validasi"; tampilRiwayat(); }
+  else { box.style.display="none"; link.innerText="Lihat Riwayat Validasi"; }
+}
+
+function resetForm(){
+  document.getElementById("kor").selectedIndex=0; document.getElementById("lb").selectedIndex=0; document.getElementById("rit").selectedIndex=0;
+  document.getElementById("jd").value=""; document.getElementById("tot").value="4"; document.getElementById("tr").value="0"; document.getElementById("tur").value="0";
+  document.getElementById("ken").selectedIndex=0; document.getElementById("cat").value="";
+  pesan=""; document.getElementById("bnext").style.display="none";
+  document.getElementById("boxRiwayat").style.display="none"; document.getElementById("linkLihat").innerText="Lihat Riwayat Validasi";
+  upd(); try{ window.scrollTo(0,0); }catch(e){}
+}
+
+function tampilRiwayat(){
+  var data=bacaStorage("anteng_riwayat"), hariIni=tglHariIni(), hariIniData=[];
+  for(var i=0;i<data.length;i++){ if(data[i].tanggal===hariIni) hariIniData.push(data[i]); }
+  document.getElementById("jmlRw").innerText=hariIniData.length+" data";
+  document.getElementById("jmlRwMini").innerText=hariIniData.length+" data";
+  if(hariIniData.length===0){ document.getElementById("listRw").innerHTML='<p style="font-size:15px;color:#94a3b8;text-align:center;margin:14px 0">Belum ada data hari ini</p>'; return; }
+  var html="";
+  for(var j=0;j<hariIniData.length;j++){
+    var d=hariIniData[j];
+    var cls = d.status==="TERVALIDASI" ? "st-ok" : (d.status==="GAGAL_KIRIM" ? "st-err" : "st-pending");
+    html+='<div class="rw-item"><div style="display:flex;justify-content:space-between"><b>'+escHtml(d.noLambung)+' | '+escHtml(d.rit)+'</b><span class="'+cls+'">'+escHtml(d.status||"PENDING")+'</span></div><div style="color:#64748b;font-size:13px">'+escHtml(d.idPerjalanan||d.idTransaksi)+'</div><div style="margin-top:6px">🕐 Jadwal '+escHtml(d.jadwal)+' | Aktual '+escHtml(d.aktual)+'<br>👥 Total '+escHtml(d.pnpNaik)+' | Transit '+escHtml(d.pnpTransit)+' | Turun '+escHtml(d.pnpTurun)+'</div></div>';
+  }
+  document.getElementById("listRw").innerHTML=html;
+}
+
+function simpan(){
+  var btn=document.getElementById("btnSimpanTimer"); if(btn && btn.disabled) return;
+  var jd=document.getElementById("jd").value, ak=document.getElementById("ak").value, cat=(document.getElementById("cat").value||"").trim(), idp=document.getElementById("idp").value;
+  var dataLama=bacaStorage("anteng_riwayat");
+  for(var i=0;i<dataLama.length;i++){
+    if(dataLama[i].idPerjalanan===idp && dataLama[i].status !== "GAGAL_KIRIM"){
+      tampilToast("ID_PERJALANAN SUDAH ADA", "err"); cekSudahKirim(); return;
+    }
+  }
+  if(hasSavedIdHtml(IDS_TIMER_KEY, idp) || TIMER_SERVER_DUPS[idp]){
+    tampilToast("ID_PERJALANAN SUDAH ADA", "err"); cekSudahKirim(); return;
+  }
+  if(!jd){ tampilToast("Jadwal masih kosong. Klik 'Cek Ulang Master' terlebih dahulu.", "warn"); return; }
+  if(!ak){ tampilToast("Aktual masih kosong.", "warn"); return; }
+  if(isTelat() && (!cat || cat==="-" || cat.length<3)){
+    tampilToast("Jam berbeda dari jadwal! Wajib isi KETERANGAN minimal 3 huruf.", "err");
+    document.getElementById("cat").focus(); cekTelat(); return;
+  }
+  var jamKirim=new Date(), kodeUnik=pad2(jamKirim.getHours())+pad2(jamKirim.getMinutes())+pad2(jamKirim.getSeconds())+"-"+String(Math.floor(Math.random()*900)+100);
+  var pl={petugas:document.getElementById("nama").innerText,tanggal:tglHariIni(),koridor:document.getElementById("kor").value,noLambung:document.getElementById("lb").value,rit:document.getElementById("rit").value,polaOperasional:document.getElementById("pola").value,idPerjalanan:idp,idTransaksi:idp+"-T"+kodeUnik,terminal:document.getElementById("term").value,jadwal:jd,aktual:ak,pnpNaik:parseInt(document.getElementById("tot").value,10)||0,pnpTransit:parseInt(document.getElementById("tr").value,10)||0,pnpTurun:parseInt(document.getElementById("tur").value,10)||0,kendala:document.getElementById("ken").value,catatan:cat||"-",status:"PENDING",waktuKirim:pad2(jamKirim.getHours())+":"+pad2(jamKirim.getMinutes())};
+  if(btn) btn.disabled=true; document.getElementById("load").style.display="flex";
+
+  var simpanKeRiw = function(statusAkhir){
+    var latest = bacaStorage("anteng_riwayat").filter(function(r){ return r.idPerjalanan !== idp; });
+    pl.status = statusAkhir;
+    latest.unshift(pl);
+    if(statusAkhir !== "GAGAL_KIRIM") markSavedIdHtml(IDS_TIMER_KEY, idp);
+    tulisStorage("anteng_riwayat", latest);
+    tampilRiwayat();
+    cekSudahKirim();
+  };
+
+  var selesaiSukses=function(){
+    document.getElementById("load").style.display="none";
+    pesan=buildWaTimerHTML(pl);
+    simpanKeRiw("PENDING");
+    document.getElementById("bnext").style.display="block";
+    tampilToast("Data Timer berhasil dikirim ke Database!", "ok");
+  };
+
+  var selesaiGagal=function(){
+    document.getElementById("load").style.display="none";
+    if(btn) btn.disabled=false;
+    simpanKeRiw("GAGAL_KIRIM");
+    tampilToast("Gagal terhubung ke server. Data disimpan lokal & bisa dikirim ulang.", "err");
+  };
+
+  var doPost = function(){
+    fetch(API_TIMER,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},body:JSON.stringify(pl)})
+      .then(selesaiSukses)["catch"](selesaiGagal);
+  };
+
+  if(window.fetch){
+    fetch(API_TIMER+"?idPerjalanan="+encodeURIComponent(idp)+"&t="+Date.now())
+      .then(function(r){ return r.text(); })
+      .then(function(txt){
+        var tm=null; try{ tm=JSON.parse(txt); }catch(e){}
+        if(tm && !tm.tidakKetemu && !tm.error && (tm.jadwal || tm.aktual || tm.terminal || tm.pnpNaik !== undefined)){
+          markSavedIdHtml(IDS_TIMER_KEY, idp);
+          TIMER_SERVER_DUPS[idp] = true;
+          document.getElementById("load").style.display="none";
+          if(btn) btn.disabled=false;
+          cekSudahKirim();
+          tampilToast("ID_PERJALANAN SUDAH ADA", "err");
+          return;
+        }
+        doPost();
+      })["catch"](doPost);
+  } else { selesaiGagal(); }
+}
+
+/* ==================== MODUL PPA ==================== */
+function hitungSelisihMenit(jamAwal, jamAkhir){
+  var m1 = jamKeMenit(jamAwal), m2 = jamKeMenit(jamAkhir);
+  if(m1 === null || m2 === null) return null;
+  var diff = m2 - m1;
+  if(diff < 0) diff += 1440;
+  return diff;
+}
+
+function hitungHeadwayPPA(posVal, jamTibaVal, idpSaatIni){
+  var riw = bacaStorage("anteng_riwayat_ppa"), hariIni = tglHariIni(), mSekarang = jamKeMenit(jamTibaVal), busDepan = null, mTerdekat = -1;
+  for(var i=0;i<riw.length;i++){
+    var item = riw[i];
+    if(item && item.tanggal === hariIni && item.pos === posVal && item.idPerjalanan !== idpSaatIni && item.status !== "GAGAL_KIRIM" && item.jamTiba){
+      var mItem = jamKeMenit(item.jamTiba);
+      if(mItem !== null && (mSekarang === null || mItem <= mSekarang) && mItem >= mTerdekat){ mTerdekat = mItem; busDepan = item; }
+    }
+  }
+  if(!busDepan) return "BUS PERTAMA";
+  var selisih = hitungSelisihMenit(busDepan.jamTiba, jamTibaVal);
+  if(selisih === null) return "BUS PERTAMA";
+  return selisih + " menit (dari " + busDepan.noLambung + " " + busDepan.rit + " jam " + busDepan.jamTiba + ")";
+}
+
+function perbaruiInfoPPA(){
+  var posVal = document.getElementById("ppaPos").value, jamTibaVal = document.getElementById("ppaJam").value, idp = document.getElementById("ppaIdp").value;
+  var jamAktual = (dataTimerPPA && dataTimerPPA.aktual) ? dataTimerPPA.aktual : "";
+  var waktuTempuhStr = "-";
+  if(jamAktual && jamTibaVal){
+    var mTempuh = hitungSelisihMenit(jamAktual, jamTibaVal);
+    if(mTempuh !== null) waktuTempuhStr = mTempuh + " menit";
+  }
+  var headwayStr = hitungHeadwayPPA(posVal, jamTibaVal, idp);
+  previewHeadwayPPA = { pos: posVal, jamBerangkatAktual: jamAktual || "-", jamTibaPos: jamTibaVal || "-", waktuTempuh: waktuTempuhStr, headway: headwayStr };
+  var boxH = document.getElementById("infoHeadway");
+  if(boxH){ boxH.style.display = "block"; boxH.innerHTML = "<b>⏱️ Waktu Tempuh ke POS:</b> " + escHtml(waktuTempuhStr) + "<br><b>🚌 Headway dengan Bus Depan:</b> " + escHtml(headwayStr); }
+}
+
+function cekSudahKirimPPA(){
+  var idp = document.getElementById("ppaIdp").value;
+  var riw = bacaStorage("anteng_riwayat_ppa"), btn = document.getElementById("btnSimpanPPA"), warnEl = document.getElementById("ppaDupWarn");
+  if(!btn) return false;
+  var isDup = hasSavedIdHtml(IDS_PPA_KEY, idp);
+  for(var i=0;i<riw.length;i++){
+    if(riw[i] && riw[i].idPerjalanan && riw[i].status !== "GAGAL_KIRIM"){
+      markSavedIdHtml(IDS_PPA_KEY, riw[i].idPerjalanan);
+      if(riw[i].idPerjalanan === idp) isDup = true;
+    }
+  }
+  if(isDup){
+    btn.disabled = false; btn.style.background = "#b91c1c"; btn.innerText = "ID_PERJALANAN SUDAH ADA";
+    if(warnEl){ warnEl.style.display = "block"; warnEl.innerText = "⛔ ID_PERJALANAN SUDAH ADA (" + idp + ")"; }
+    return true;
+  }
+  if(warnEl) warnEl.style.display = "none";
+  btn.style.background = "#004080";
+  btn.innerText = "SIMPAN DAN KIRIM VALIDASI";
+  return false;
+}
+
+function updPPA(){
+  var kor = document.getElementById("ppaKor").value, lb = document.getElementById("ppaLb").value, rit = document.getElementById("ppaRit").value, tgl = tglHariIni();
+  document.getElementById("ppaTgl").value = tgl;
+  var idp = kor + "-" + lb + rit + tgl.split("-").join("");
+  document.getElementById("ppaIdp").value = idp;
+  dataTimerPPA = null; previewHeadwayPPA = null;
+  document.getElementById("peringatanJam").style.display = "none";
+  document.getElementById("ppaJam").value = jamSekarangHHMM();
+  var box = document.getElementById("infoTimer");
+  box.style.display = "block"; box.style.background = "#fef9c3"; box.style.borderColor = "#fde68a";
+  box.innerHTML = "⏳ Mengambil data Timer dari Database Timer...";
+
+  var tampilTidakAda = function(){
+    box.style.background = "#fef2f2"; box.style.borderColor = "#fecaca";
+    box.innerHTML = "<b>⚠️ BELUM ADA DATA TIMER untuk ID ini.</b><br>ID: " + escHtml(idp) + "<br>Minta Timer kirim dulu, atau cek No. Lambung / Rit.";
+    onJamPPAChange();
+  };
+  if(!window.fetch){ tampilTidakAda(); return; }
+  fetch(API_TIMER + "?idPerjalanan=" + encodeURIComponent(idp) + "&t=" + Date.now())
+    .then(function(res){ return res.text(); })
+    .then(function(txt){
+      var tm = null; try{ tm = JSON.parse(txt); }catch(e){}
+      if(tm && !tm.tidakKetemu && !tm.error && (tm.jadwal || tm.aktual || tm.terminal || tm.pnpNaik !== undefined)){
+        dataTimerPPA = tm;
+        box.style.background = "#eff6ff"; box.style.borderColor = "#bfdbfe";
+        box.innerHTML = "<b>✅ DATA TIMER DITEMUKAN:</b><br>Bus " + escHtml(lb) + " | Rit " + escHtml(rit) + " | Terminal <b>" + escHtml(tm.terminal || "-") + "</b><br>Pola: <b>" + escHtml(tm.polaOperasional || "REGULER") + "</b> | Jadwal: <b>" + escHtml(tm.jadwal || "-") + "</b><br><b>Jam Berangkat Aktual: " + escHtml(tm.aktual || "-") + "</b><br>Total <b>" + escHtml(tm.pnpNaik || 0) + "</b> | Transit <b>" + escHtml(tm.pnpTransit || 0) + "</b> | Turun <b>" + escHtml(tm.pnpTurun || 0) + "</b>";
+        onJamPPAChange();
+      } else { tampilTidakAda(); }
+    })["catch"](tampilTidakAda);
+}
+
+function cekJamValidasi(){
+  var warn = document.getElementById("peringatanJam"), btn = document.getElementById("btnSimpanPPA");
+  var jamPPA = document.getElementById("ppaJam").value, mPPA = jamKeMenit(jamPPA);
+  var mBerangkat = (dataTimerPPA && dataTimerPPA.aktual) ? jamKeMenit(dataTimerPPA.aktual) : null;
+  if(mPPA !== null && mBerangkat !== null && mPPA < mBerangkat){
+    warn.style.display = "block";
+    warn.innerHTML = "⚠️ Jam tiba di POS PPA (" + escHtml(jamPPA) + ") tidak boleh lebih cepat dari jam berangkat aktual (" + escHtml(dataTimerPPA.aktual) + ").";
+    if(btn) btn.disabled = true;
+    return false;
+  }
+  warn.style.display = "none"; warn.innerHTML = "";
+  if(btn) btn.disabled = false;
+  cekSudahKirimPPA();
+  return true;
+}
+
+function onJamPPAChange(){ cekJamValidasi(); perbaruiInfoPPA(); }
+
+function simpanPPA(){
+  var btn = document.getElementById("btnSimpanPPA");
+  if(btn && btn.disabled) return;
+  if(cekSudahKirimPPA()){ tampilToast("ID_PERJALANAN SUDAH ADA", "err"); return; }
+  if(!cekJamValidasi()){ tampilToast("Jam tiba di POS tidak boleh lebih cepat dari jam berangkat aktual.", "warn"); return; }
+  perbaruiInfoPPA();
+
+  var idp = document.getElementById("ppaIdp").value, posVal = document.getElementById("ppaPos").value, jamTibaVal = document.getElementById("ppaJam").value;
+  var jamAktualTimer = (dataTimerPPA && dataTimerPPA.aktual) ? dataTimerPPA.aktual : "-";
+  var polaVal = (dataTimerPPA && dataTimerPPA.polaOperasional) ? dataTimerPPA.polaOperasional : "REGULER";
+  var waktuTempuhVal = (previewHeadwayPPA && previewHeadwayPPA.waktuTempuh) ? previewHeadwayPPA.waktuTempuh : "-";
+  var headwayVal = (previewHeadwayPPA && previewHeadwayPPA.headway) ? previewHeadwayPPA.headway : "BUS PERTAMA";
+  var ketVal = (document.getElementById("ppaKet").value || "").trim() || "-";
+  var jamKirim = new Date();
+
+  var pl = {
+    tanggal: document.getElementById("ppaTgl").value, idPerjalanan: idp, pos: posVal, posPPA: posVal,
+    jamTiba: jamTibaVal, jamTibaPos: jamTibaVal, aktual: jamAktualTimer, jamBerangkatAktual: jamAktualTimer,
+    waktuTempuhKePos: waktuTempuhVal, headwayPos: headwayVal,
+    all: parseInt(document.getElementById("ppaAll").value,10)||0, allPnp: parseInt(document.getElementById("ppaAll").value,10)||0,
+    naik: parseInt(document.getElementById("ppaNaik").value,10)||0, pnpNaik: parseInt(document.getElementById("ppaNaik").value,10)||0,
+    turun: parseInt(document.getElementById("ppaTurun").value,10)||0, pnpTurun: parseInt(document.getElementById("ppaTurun").value,10)||0,
+    keterangan: ketVal, ket: ketVal, petugas: document.getElementById("namaPPA").innerText,
+    waktuKirim: pad2(jamKirim.getHours()) + ":" + pad2(jamKirim.getMinutes()),
+    koridor: document.getElementById("ppaKor").value, noLambung: document.getElementById("ppaLb").value, rit: document.getElementById("ppaRit").value,
+    polaOperasional: polaVal, status: "Tervalidasi"
+  };
+
+  if(btn) btn.disabled = true;
+  document.getElementById("load").style.display = "flex";
+
+  var simpanRiwPPA = function(st){
+    var riw = bacaStorage("anteng_riwayat_ppa").filter(function(r){ return r.idPerjalanan !== idp; });
+    pl.status = st;
+    riw.unshift(pl);
+    if(st !== "GAGAL_KIRIM") markSavedIdHtml(IDS_PPA_KEY, idp);
+    tulisStorage("anteng_riwayat_ppa", riw);
+    tampilRiwayatPPA();
+    cekSudahKirimPPA();
+  };
+
+  var selesaiSukses = function(){
+    document.getElementById("load").style.display = "none";
+    if(btn) btn.disabled = false;
+    simpanRiwPPA("Tervalidasi");
+    pesanPPA = "✅ *TEMAN ANTENG - VALIDASI PPA*\nID_PERJALANAN: " + pl.idPerjalanan + "\nKoridor: " + pl.koridor + "\nPola: " + pl.polaOperasional + "\nTanggal: " + pl.tanggal + "\nPetugas PPA: " + pl.petugas + "\nBus: " + pl.noLambung + " | Rit: " + pl.rit + "\nPOS: " + pl.pos + "\nJAM BERANGKAT AKTUAL (Timer): " + pl.aktual + "\nJam Tiba di POS: " + pl.jamTiba + "\nWaktu Tempuh ke POS: " + pl.waktuTempuhKePos + "\nHeadway dengan Bus Depan: " + pl.headwayPos + "\nAll: " + pl.all + " | Naik: " + pl.naik + " | Turun: " + pl.turun + "\nKet: " + pl.keterangan + "\nStatus: " + pl.status;
+    tampilkanBoxWA("waBoxPPA", "bwaPPA", "waPrevPPA", pesanPPA);
+    document.getElementById("bnextPPA").style.display = "block";
+    tampilToast("Validasi PPA tersimpan ke database!", "ok");
+  };
+
+  var selesaiGagal = function(){
+    document.getElementById("load").style.display = "none";
+    if(btn) btn.disabled = false;
+    simpanRiwPPA("GAGAL_KIRIM");
+    tampilToast("Gagal terhubung ke server. Data PPA tersimpan lokal.", "err");
+  };
+
+  if(window.fetch && API_PPA){
+    fetch(API_PPA, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(pl) })
+      .then(selesaiSukses)["catch"](selesaiGagal);
+  } else { selesaiGagal(); }
+}
+
+function resetPPA(){
+  document.getElementById("ppaLb").selectedIndex = 0; document.getElementById("ppaRit").selectedIndex = 0;
+  document.getElementById("ppaAll").value = "0"; document.getElementById("ppaNaik").value = "0"; document.getElementById("ppaTurun").value = "0"; document.getElementById("ppaKet").value = "";
+  sembunyikanBoxWA("waBoxPPA", "waPrevPPA"); document.getElementById("bnextPPA").style.display = "none"; pesanPPA = ""; updPPA();
+}
+function toggleRiwayatPPA(){
+  var box = document.getElementById("boxRiwayatPPA"), link = document.getElementById("linkLihatPPA");
+  if(box.style.display === "none"){ box.style.display = "block"; link.innerText = "Sembunyikan Riwayat Validasi"; tampilRiwayatPPA(); }
+  else { box.style.display = "none"; link.innerText = "Lihat Riwayat Validasi"; }
+}
+function tampilRiwayatPPA(){
+  var data = bacaStorage("anteng_riwayat_ppa"), hariIni = tglHariIni(), hariIniData = [];
+  for(var i=0;i<data.length;i++){ if(data[i].tanggal === hariIni) hariIniData.push(data[i]); }
+  document.getElementById("jmlRwPPA").innerText = hariIniData.length + " data";
+  document.getElementById("jmlRwMiniPPA").innerText = hariIniData.length + " data";
+  var el = document.getElementById("listRwPPA");
+  if(!hariIniData.length){ el.innerHTML = '<p style="font-size:15px;color:#94a3b8;text-align:center;margin:14px 0">Belum ada data PPA hari ini</p>'; return; }
+  var html = "";
+  for(var j=0;j<hariIniData.length;j++){
+    var d = hariIniData[j];
+    var cls = d.status === "GAGAL_KIRIM" ? "st-err" : "st-ok";
+    html += '<div class="rw-item"><div style="display:flex;justify-content:space-between"><b>' + escHtml(d.noLambung) + ' | ' + escHtml(d.rit) + ' (' + escHtml(d.pos) + ')</b><span class="' + cls + '">' + escHtml(d.status) + '</span></div><div style="color:#64748b;font-size:13px">' + escHtml(d.idPerjalanan) + '</div><div style="margin-top:6px">🕐 Berangkat ' + escHtml(d.aktual) + ' | Tiba POS ' + escHtml(d.jamTiba) + ' | Tempuh ' + escHtml(d.waktuTempuhKePos) + '<br>🚌 Headway: ' + escHtml(d.headwayPos) + '<br>👥 All ' + escHtml(d.all) + ' | Naik ' + escHtml(d.naik) + ' | Turun ' + escHtml(d.turun) + '</div></div>';
+  }
+  el.innerHTML = html;
+}
+
+/* ==================== MODUL PRAMUJASA (KOLOM TUNAI & NON-TUNAI) ==================== */
+function ambilAngka(id){ var el = document.getElementById(id); var val = el ? parseInt(el.value,10) : 0; return isNaN(val) || val < 0 ? 0 : val; }
+
+function ambilInputHaltePram(){
+  var tunai = {}, nonTunai = {}, subTunai = 0, subNonTunai = 0;
+  for(var i=0;i<KATEGORI_LIST.length;i++){
+    var kat = KATEGORI_LIST[i], kLow = kat.toLowerCase();
+    var tv = ambilAngka("pramTunai" + kat), ntv = ambilAngka("pramNonTunai" + kat);
+    tunai[kLow] = tv; nonTunai[kLow] = ntv;
+    subTunai += tv; subNonTunai += ntv;
+  }
+  return { tunai: tunai, nonTunai: nonTunai, totalTunai: subTunai, totalNonTunai: subNonTunai, totalHalte: subTunai + subNonTunai };
+}
+
+function hitungHaltePram(){
+  var r = ambilInputHaltePram();
+  document.getElementById("pramSubTunai").innerText = r.totalTunai + " org";
+  document.getElementById("pramSubNonTunai").innerText = r.totalNonTunai + " org";
+  document.getElementById("totalHalteBox").innerText = r.totalHalte + " org";
+  return r.totalHalte;
+}
+
+function normItemPram(item){
+  if(item.tunai && item.nonTunai){
+    var st = (item.tunai.umum||0)+(item.tunai.buruh||0)+(item.tunai.pelajar||0)+(item.tunai.lansia||0)+(item.tunai.disabilitas||0)+(item.tunai.veteran||0);
+    var snt = (item.nonTunai.umum||0)+(item.nonTunai.buruh||0)+(item.nonTunai.pelajar||0)+(item.nonTunai.lansia||0)+(item.nonTunai.disabilitas||0)+(item.nonTunai.veteran||0);
+    return { tunai: item.tunai, nonTunai: item.nonTunai, totalTunai: st, totalNonTunai: snt, totalHalte: st + snt };
+  }
+  var counts = { umum: item.umum||0, buruh: item.buruh||0, pelajar: item.pelajar||0, lansia: item.lansia||0, disabilitas: item.disabilitas||0, veteran: item.veteran||0 };
+  var zero = { umum:0, buruh:0, pelajar:0, lansia:0, disabilitas:0, veteran:0 };
+  var sum = counts.umum+counts.buruh+counts.pelajar+counts.lansia+counts.disabilitas+counts.veteran;
+  var isNT = String(item.metodeBayar || "").toUpperCase().indexOf("NON TUNAI") !== -1;
+  return { tunai: isNT ? zero : counts, nonTunai: isNT ? counts : zero, totalTunai: isNT ? 0 : sum, totalNonTunai: isNT ? sum : 0, totalHalte: sum };
+}
+
+function normalRit(r){ var s = String(r||"").toUpperCase().replace(/[^0-9]/g,""); return s ? parseInt(s,10) : String(r||"").toUpperCase(); }
+
+function hitungRingkasanRit(tgl, lb, rit, idp){
+  var riw = bacaStorage(STORAGE_KEY_PRAM);
+  var sum = { tUmum:0, tLansia:0, tPelajar:0, tBuruh:0, tDisabilitas:0, tVeteran:0, ntUmum:0, ntLansia:0, ntPelajar:0, ntBuruh:0, ntDisabilitas:0, ntVeteran:0, tunai:0, nonTunai:0, totalRit:0, totalTurunRit:0 };
+  for(var i=0;i<riw.length;i++){
+    var item = riw[i]; if(!item) continue;
+    var cocok = (idp && item.idPerjalanan) ? (item.idPerjalanan === idp) : ((!tgl||item.tanggal===tgl) && (!lb||item.noLambung===lb) && (!rit||normalRit(item.rit)===normalRit(rit)));
+    if(!cocok) continue;
+    var norm = normItemPram(item);
+    sum.tUmum += norm.tunai.umum||0; sum.tLansia += norm.tunai.lansia||0; sum.tPelajar += norm.tunai.pelajar||0;
+    sum.tBuruh += norm.tunai.buruh||0; sum.tDisabilitas += norm.tunai.disabilitas||0; sum.tVeteran += norm.tunai.veteran||0;
+    sum.ntUmum += norm.nonTunai.umum||0; sum.ntLansia += norm.nonTunai.lansia||0; sum.ntPelajar += norm.nonTunai.pelajar||0;
+    sum.ntBuruh += norm.nonTunai.buruh||0; sum.ntDisabilitas += norm.nonTunai.disabilitas||0; sum.ntVeteran += norm.nonTunai.veteran||0;
+    sum.tunai += norm.totalTunai; sum.nonTunai += norm.totalNonTunai; sum.totalRit += norm.totalHalte;
+    sum.totalTurunRit += parseInt(item.penumpangTurun,10)||0;
+  }
+  return sum;
+}
+
+function refreshAkumulasiPram(){
+  var sum = hitungRingkasanRit(document.getElementById("pramTgl").value || tglHariIni(), document.getElementById("pramLb").value, document.getElementById("pramRit").value, document.getElementById("pramIdp").value);
+  document.getElementById("tUmum").innerText = sum.tUmum; document.getElementById("tLansia").innerText = sum.tLansia;
+  document.getElementById("tPelajar").innerText = sum.tPelajar; document.getElementById("tBuruh").innerText = sum.tBuruh;
+  document.getElementById("tDisabilitas").innerText = sum.tDisabilitas; document.getElementById("tVeteran").innerText = sum.tVeteran;
+  document.getElementById("ntUmum").innerText = sum.ntUmum; document.getElementById("ntLansia").innerText = sum.ntLansia;
+  document.getElementById("ntPelajar").innerText = sum.ntPelajar; document.getElementById("ntBuruh").innerText = sum.ntBuruh;
+  document.getElementById("ntDisabilitas").innerText = sum.ntDisabilitas; document.getElementById("ntVeteran").innerText = sum.ntVeteran;
+  document.getElementById("akTotalRit").innerText = sum.totalRit;
+}
+
+function renderDropdownPramudi(){
+  var sel = document.getElementById("pramPramudi");
+  if(!sel) return;
+  var prev = sel.value;
+  if(!MASTER_PRAMUDI_LIST.length){
+    sel.innerHTML = '<option value="">Memuat daftar Pramudi...</option>';
+    return;
+  }
+  var html = "";
+  for(var i=0;i<MASTER_PRAMUDI_LIST.length;i++){
+    var p = MASTER_PRAMUDI_LIST[i];
+    html += '<option value="' + escHtml(p.id) + '" data-nama="' + escHtml(p.nama) + '">' + escHtml(p.id) + ' - ' + escHtml(p.nama) + '</option>';
+  }
+  sel.innerHTML = html;
+  if(prev){
+    for(var j=0;j<MASTER_PRAMUDI_LIST.length;j++){
+      if(MASTER_PRAMUDI_LIST[j].id === prev){ sel.value = prev; break; }
+    }
+  }
+}
+
+function getInfoArahPram(){
+  var lbEl = document.getElementById("pramLb"), ritEl = document.getElementById("pramRit");
+  var lb = lbEl ? lbEl.value : "LB01", rit = ritEl ? ritEl.value : "R01";
+  var kunci = normalKunciJS(lb + "-" + rit) || (lb + "-" + rit);
+  var infoRit = MASTER_RIT[kunci] || MASTER_RIT[rit] || null;
+  var arah = "";
+  if(infoRit && (infoRit.arah === "BP" || infoRit.arah === "BK")) arah = infoRit.arah;
+  else if(infoRit && infoRit.terminalAkhir){
+    var upAk = String(infoRit.terminalAkhir).toUpperCase();
+    if(upAk.indexOf("BULUPITU") !== -1) arah = "BP";
+    else if(upAk.indexOf("BUKATEJA") !== -1) arah = "BK";
+  }
+  var butuhManual = !arah;
+  if(!arah) arah = PRAM_MANUAL_ARAH || "BP";
+  var label = (infoRit && infoRit.terminal && infoRit.terminalAkhir)
+    ? (arah + " (" + infoRit.terminal + " → " + infoRit.terminalAkhir + ")")
+    : (arah === "BP" ? "BP (Arah Bulupitu)" : "BK (Arah Bukateja)");
+  return { arah: arah, label: label, butuhManual: butuhManual, infoRit: infoRit };
+}
+
+function setArahManualPram(arah){
+  PRAM_MANUAL_ARAH = (arah === "BK") ? "BK" : "BP";
+  renderDropdownHaltePram();
+}
+
+function renderDropdownHaltePram(){
+  var sel = document.getElementById("pramHalte"), korEl = document.getElementById("pramKor");
+  if(!sel) return;
+  var kor = korEl ? korEl.value : "KOR01";
+  var infoArah = getInfoArahPram();
+  var arah = infoArah.arah;
+
+  var boxManual = document.getElementById("pramArahManualBox");
+  if(boxManual){
+    boxManual.style.display = infoArah.butuhManual ? "flex" : "none";
+    var btnBP = document.getElementById("btnArahBP"), btnBK = document.getElementById("btnArahBK");
+    if(btnBP){
+      btnBP.style.background = arah === "BP" ? "#10b981" : "#fff";
+      btnBP.style.color = arah === "BP" ? "#fff" : "#334155";
+      btnBP.style.borderColor = arah === "BP" ? "#047857" : "#cbd5e1";
+    }
+    if(btnBK){
+      btnBK.style.background = arah === "BK" ? "#10b981" : "#fff";
+      btnBK.style.color = arah === "BK" ? "#fff" : "#334155";
+      btnBK.style.borderColor = arah === "BK" ? "#047857" : "#cbd5e1";
+    }
+  }
+
+  var daftar = [];
+  if(MASTER_HALTE_LIST.length > 0){
+    for(var i=0;i<MASTER_HALTE_LIST.length;i++){
+      var h = MASTER_HALTE_LIST[i];
+      if((!h.koridor || h.koridor === kor) && (!arah || h.arah === arah)) daftar.push(h);
+    }
+    if(!daftar.length){
+      for(var j=0;j<MASTER_HALTE_LIST.length;j++){
+        if(!MASTER_HALTE_LIST[j].koridor || MASTER_HALTE_LIST[j].koridor === kor) daftar.push(MASTER_HALTE_LIST[j]);
+      }
+    }
+    if(!daftar.length) daftar = MASTER_HALTE_LIST.slice();
+  } else {
+    daftar = DEFAULT_HALTE_PRAM.slice();
+  }
+
+  var prevId = "";
+  if(sel.selectedIndex >= 0 && sel.options[sel.selectedIndex]){
+    prevId = sel.options[sel.selectedIndex].getAttribute("data-id") || "";
+  }
+
+  var html = "";
+  for(var k=0;k<daftar.length;k++){
+    var item = daftar[k];
+    html += '<option value="' + escHtml(item.nama) + '" data-id="' + escHtml(item.id) + '">' + (k + 1) + '. ' + escHtml(item.nama) + ' (' + escHtml(item.id) + ' · ' + escHtml(item.arah || arah) + ')</option>';
+  }
+  sel.innerHTML = html;
+
+  if(prevId){
+    for(var m=0;m<sel.options.length;m++){
+      if(sel.options[m].getAttribute("data-id") === prevId){ sel.selectedIndex = m; break; }
+    }
+  }
+
+  var cntEl = document.getElementById("pramHalteCount"), arahEl = document.getElementById("pramArahInfo");
+  if(cntEl) cntEl.innerText = "(Searah · " + daftar.length + " halte)";
+  if(arahEl) arahEl.innerText = "Arah: " + infoArah.label;
+}
+
+function cekSudahKirimPram(){
+  var idpEl = document.getElementById("pramIdp"), idp = idpEl ? idpEl.value : "";
+  var riw = bacaStorage(STORAGE_KEY_PRAM), isDup = hasSavedIdHtml(IDS_PRAM_KEY, idp);
+  for(var i=0;i<riw.length;i++){
+    if(riw[i] && riw[i].idPerjalanan && riw[i].status === "TERVALIDASI"){
+      markSavedIdHtml(IDS_PRAM_KEY, riw[i].idPerjalanan);
+      if(riw[i].idPerjalanan === idp) isDup = true;
+    }
+  }
+  var warnEl = document.getElementById("pramDupWarn"), btnTemp = document.getElementById("btnSimpanTempPram"), btnKirim = document.getElementById("btnKirimPram");
+  if(isDup){
+    if(warnEl){ warnEl.style.display = "block"; warnEl.innerText = "⛔ ID_PERJALANAN SUDAH ADA (" + idp + ")"; }
+    if(btnTemp){ btnTemp.style.background = "#b91c1c"; btnTemp.style.color = "#fff"; btnTemp.innerText = "ID_PERJALANAN SUDAH ADA"; }
+    if(btnKirim){ btnKirim.style.background = "#b91c1c"; btnKirim.style.color = "#fff"; btnKirim.innerText = "ID_PERJALANAN SUDAH ADA"; }
+  } else {
+    if(warnEl) warnEl.style.display = "none";
+    if(btnTemp){ btnTemp.style.background = "#f59e0b"; btnTemp.style.color = "#451a03"; btnTemp.innerText = "💾 SIMPAN SEMENTARA (Halte Ini)"; }
+    if(btnKirim){ btnKirim.style.background = "#10b981"; btnKirim.style.color = "#fff"; btnKirim.innerText = "🚀 VALIDASI & KIRIM (Database)"; }
+  }
+  return isDup;
+}
+
+function updPram(preserveManualJam){
+  var kor = document.getElementById("pramKor").value, lb = document.getElementById("pramLb").value, rit = document.getElementById("pramRit").value, tgl = tglHariIni();
+  document.getElementById("pramTgl").value = tgl;
+  document.getElementById("pramIdp").value = kor + "-" + lb + rit + tgl.split("-").join("");
+  var jamEl = document.getElementById("pramJamTiba");
+  if(jamEl && (!preserveManualJam || jamEl.getAttribute("data-manual") !== "1" || !jamEl.value)){
+    jamEl.value = jamSekarangHHMM(); jamEl.setAttribute("data-manual", "0");
+  }
+  renderDropdownPramudi();
+  renderDropdownHaltePram();
+  hitungHaltePram(); refreshAkumulasiPram(); tampilTransaksiSementaraPram(); cekSudahKirimPram();
+}
+
+function bersihkanInputHalteSaja(){
+  for(var i=0;i<KATEGORI_LIST.length;i++){
+    document.getElementById("pramTunai" + KATEGORI_LIST[i]).value = "0";
+    document.getElementById("pramNonTunai" + KATEGORI_LIST[i]).value = "0";
+  }
+  document.getElementById("pramTurun").value = "0"; document.getElementById("pramKet").value = "";
+  var jamEl = document.getElementById("pramJamTiba"); if(jamEl) jamEl.setAttribute("data-manual", "0");
+  hitungHaltePram();
+}
+
+function toggleSementaraPram(){
+  var box = document.getElementById("boxSementaraPram"), link = document.getElementById("linkLihatSementaraPram");
+  if(!box || !link) return;
+  if(box.style.display === "none"){
+    box.style.display = "block";
+    link.innerText = "Sembunyikan Transaksi Sementara";
+    tampilTransaksiSementaraPram();
+  } else {
+    box.style.display = "none";
+    link.innerText = "Lihat Transaksi Sementara";
+  }
+}
+
+function tampilTransaksiSementaraPram(){
+  var idpEl = document.getElementById("pramIdp"), tglEl = document.getElementById("pramTgl");
+  var idp = idpEl ? idpEl.value : "", tgl = (tglEl && tglEl.value) || tglHariIni();
+  var data = bacaStorage(STORAGE_KEY_PRAM), tempData = [];
+  for(var i=0;i<data.length;i++){
+    var d = data[i];
+    if(d && (!d.tanggal || d.tanggal === tgl) && d.idPerjalanan === idp && d.status !== "TERVALIDASI"){
+      tempData.push(d);
+    }
+  }
+  var mini = document.getElementById("jmlSementaraPram");
+  if(mini) mini.innerText = "(" + tempData.length + " halte sementara)";
+  var judul = document.getElementById("judulSementaraPram");
+  if(judul) judul.innerText = "TRANSAKSI SEMENTARA PER HALTE (" + idp + ")";
+  var jmlBox = document.getElementById("jmlSementaraPramBox");
+  if(jmlBox) jmlBox.innerText = tempData.length + " halte";
+  var listEl = document.getElementById("listSementaraPram");
+  if(!listEl) return;
+  if(!tempData.length){
+    listEl.innerHTML = '<p style="font-size:14px;color:#92400e;text-align:center;margin:12px 0">Belum ada transaksi sementara per halte pada rit ini</p>';
+    return;
+  }
+  var html = "";
+  for(var j=0;j<tempData.length;j++){
+    var item = tempData[j], norm = normItemPram(item), st = item.status || "SEMENTARA";
+    var cls = st === "GAGAL_KIRIM" ? "st-err" : "st-temp";
+    html += '<div class="rw-item" style="border-color:#fcd34d">'
+      + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">'
+      + '<div><b>' + escHtml(item.namaHalte) + ' (' + escHtml(item.idHalte) + ')</b><div style="color:#64748b;font-size:12px">' + escHtml(item.noLambung) + ' | ' + escHtml(item.rit) + ' · Jam ' + escHtml(item.jamTiba || item.waktuKirim) + (item.namaPramudi ? ' · Pramudi: ' + escHtml(item.namaPramudi) : '') + '</div></div>'
+      + '<span class="' + cls + '">' + escHtml(st) + '</span>'
+      + '</div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px;margin-top:6px;font-size:12px">'
+      + '<div><b style="color:#065f46">Tunai (' + norm.totalTunai + ' org)</b><div style="color:#334155">Umum ' + (norm.tunai.umum||0) + ' · Buruh ' + (norm.tunai.buruh||0) + ' · Pelajar ' + (norm.tunai.pelajar||0) + ' · Lansia ' + (norm.tunai.lansia||0) + ' · Disab ' + (norm.tunai.disabilitas||0) + ' · Vet ' + (norm.tunai.veteran||0) + '</div></div>'
+      + '<div><b style="color:#5b21b6">Non-Tunai (' + norm.totalNonTunai + ' org)</b><div style="color:#334155">Umum ' + (norm.nonTunai.umum||0) + ' · Buruh ' + (norm.nonTunai.buruh||0) + ' · Pelajar ' + (norm.nonTunai.pelajar||0) + ' · Lansia ' + (norm.nonTunai.lansia||0) + ' · Disab ' + (norm.nonTunai.disabilitas||0) + ' · Vet ' + (norm.nonTunai.veteran||0) + '</div></div>'
+      + '</div>'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:13px">'
+      + '<span>Total Naik: <b>' + norm.totalHalte + '</b> org · Turun: <b>' + escHtml(item.penumpangTurun || 0) + '</b> org' + (item.keterangan && item.keterangan !== "-" ? ' · Ket: ' + escHtml(item.keterangan) : '') + '</span>'
+      + '<button type="button" class="btn-mini-link" style="color:#dc2626;margin-top:0" onclick="hapusDraftPram(\'' + escHtml(item.idDetail) + '\')">Hapus</button>'
+      + '</div></div>';
+  }
+  listEl.innerHTML = html;
+}
+
+function hapusDraftPram(idDetail){
+  var riw = bacaStorage(STORAGE_KEY_PRAM).filter(function(x){ return !(x.idDetail === idDetail && x.status !== "TERVALIDASI"); });
+  tulisStorage(STORAGE_KEY_PRAM, riw);
+  refreshAkumulasiPram(); tampilTransaksiSementaraPram(); tampilRiwayatPram();
+  tampilToast("Transaksi sementara halte dihapus.", "ok");
+}
+
+function getSelectedPramudiPram(){
+  var sel = document.getElementById("pramPramudi");
+  if(!sel || !sel.value) return { id: "", nama: "" };
+  var opt = sel.options[sel.selectedIndex];
+  var nama = (opt && opt.getAttribute("data-nama")) || "";
+  return { id: sel.value, nama: nama };
+}
+
+function simpanPram(mode){
+  var btnKirim = document.getElementById("btnKirimPram"), btnTemp = document.getElementById("btnSimpanTempPram");
+  if(btnKirim && btnKirim.disabled) return;
+  var isValid = (mode === "VALID");
+  var tgl = document.getElementById("pramTgl").value || tglHariIni(), tglCompact = tgl.split("-").join("");
+  var kor = document.getElementById("pramKor").value, lb = document.getElementById("pramLb").value, rit = document.getElementById("pramRit").value, idp = document.getElementById("pramIdp").value;
+  var shift = document.getElementById("pramShift").value, jamTiba = document.getElementById("pramJamTiba").value || jamSekarangHHMM();
+  var halteEl = document.getElementById("pramHalte"), namaHalte = halteEl.value;
+  var idHalte = (halteEl.options[halteEl.selectedIndex] && halteEl.options[halteEl.selectedIndex].getAttribute("data-id")) || "HT01";
+  var pramudiDipilih = getSelectedPramudiPram();
+  var inp = ambilInputHaltePram(), turunHalte = ambilAngka("pramTurun"), ket = (document.getElementById("pramKet").value || "").trim() || "-";
+  var petugas = document.getElementById("namaPram").innerText, nowTs = timestampSekarang(), nowMs = Date.now();
+  var idPramTransaksi = "PJT_" + nowMs;
+
+  var riw = bacaStorage(STORAGE_KEY_PRAM);
+  var pramSudakValid = hasSavedIdHtml(IDS_PRAM_KEY, idp);
+  for(var dIdx=0;dIdx<riw.length;dIdx++){
+    if(riw[dIdx] && riw[dIdx].idPerjalanan === idp && riw[dIdx].status === "TERVALIDASI"){ pramSudakValid = true; break; }
+  }
+  if(pramSudakValid){
+    tampilToast("ID_PERJALANAN SUDAH ADA", "err");
+    cekSudahKirimPram();
+    return;
+  }
+
+  if(!isValid){
+    if(inp.totalHalte === 0 && turunHalte === 0){ tampilToast("Isi jumlah penumpang (Tunai / Non-Tunai) halte terlebih dahulu!", "warn"); return; }
+    riw.unshift({ idTransaksi: idPramTransaksi, idDetail: "TJD_" + nowMs, tanggal: tgl, koridor: kor, noLambung: lb, rit: rit, idPerjalanan: idp, shift: shift, jamTiba: jamTiba, idHalte: idHalte, namaHalte: namaHalte, tunai: inp.tunai, nonTunai: inp.nonTunai, totalTunai: inp.totalTunai, totalNonTunai: inp.totalNonTunai, totalHalte: inp.totalHalte, penumpangTurun: turunHalte, keterangan: ket, petugas: petugas, idPramudi: pramudiDipilih.id, namaPramudi: pramudiDipilih.nama, status: "SEMENTARA", waktuKirim: jamTiba });
+    tulisStorage(STORAGE_KEY_PRAM, riw);
+    var rTemp = hitungRingkasanRit(tgl, lb, rit, idp);
+    bersihkanInputHalteSaja(); refreshAkumulasiPram(); tampilTransaksiSementaraPram(); tampilRiwayatPram();
+    tampilToast("Disimpan SEMENTARA (" + namaHalte + "). Akumulasi rit: " + rTemp.totalRit + " (Tunai " + rTemp.tunai + " | Non-Tunai " + rTemp.nonTunai + ").", "warn");
+    return;
+  }
+
+  if(inp.totalHalte > 0 || turunHalte > 0){
+    riw.unshift({ idTransaksi: idPramTransaksi, idDetail: "TJD_" + nowMs, tanggal: tgl, koridor: kor, noLambung: lb, rit: rit, idPerjalanan: idp, shift: shift, jamTiba: jamTiba, idHalte: idHalte, namaHalte: namaHalte, tunai: inp.tunai, nonTunai: inp.nonTunai, totalTunai: inp.totalTunai, totalNonTunai: inp.totalNonTunai, totalHalte: inp.totalHalte, penumpangTurun: turunHalte, keterangan: ket, petugas: petugas, idPramudi: pramudiDipilih.id, namaPramudi: pramudiDipilih.nama, status: "SEMENTARA", waktuKirim: jamTiba });
+    tulisStorage(STORAGE_KEY_PRAM, riw);
+    bersihkanInputHalteSaja();
+  }
+
+  var listDetailKirim = [], sentDetailIds = {};
+  for(var i=0;i<riw.length;i++){
+    var item = riw[i];
+    if(item && item.idPerjalanan === idp && item.status !== "TERVALIDASI"){
+      var norm = normItemPram(item);
+      sentDetailIds[item.idDetail] = true;
+      listDetailKirim.push({
+        ID_DETAIL: item.idDetail || ("TJD_" + Math.random()),
+        ID_PRAMUJASA_TRANSAKSI: idPramTransaksi,
+        ID_PERJALANAN: idp, ID_HALTE: item.idHalte || "HT01",
+        TUNAI_UMUM: norm.tunai.umum||0, TUNAI_PELAJAR: norm.tunai.pelajar||0, TUNAI_BURUH: norm.tunai.buruh||0, TUNAI_LANSIA: norm.tunai.lansia||0, TUNAI_VETERAN: norm.tunai.veteran||0, TUNAI_DISABILITAS: norm.tunai.disabilitas||0,
+        NONTUNAI_UMUM: norm.nonTunai.umum||0, NONTUNAI_PELAJAR: norm.nonTunai.pelajar||0, NONTUNAI_BURUH: norm.nonTunai.buruh||0, NONTUNAI_LANSIA: norm.nonTunai.lansia||0, NONTUNAI_VETERAN: norm.nonTunai.veteran||0, NONTUNAI_DISABILITAS: norm.nonTunai.disabilitas||0,
+        MANUAL_UMUM: 0, MANUAL_PELAJAR: 0, MANUAL_BURUH: 0, MANUAL_LANSIA: 0, MANUAL_VETERAN: 0, MANUAL_DISABILITAS: 0,
+        TOTAL_TURUN: item.penumpangTurun || 0, KETERANGAN: item.keterangan || "-",
+        CREATED_AT: nowTs, CREATED_BY: petugas, UPDATED_AT: nowTs, UPDATED_BY: petugas
+      });
+    }
+  }
+
+  if(listDetailKirim.length === 0){ tampilToast("Belum ada data halte baru yang perlu dikirim untuk rit ini!", "warn"); return; }
+
+  var ringkasRit = hitungRingkasanRit(tgl, lb, rit, idp);
+
+  if(btnKirim) btnKirim.disabled = true; if(btnTemp) btnTemp.disabled = true;
+  document.getElementById("load").style.display = "flex";
+
+  var infoArahPram = getInfoArahPram();
+  var infoRitPram = infoArahPram.infoRit || {};
+  var lokasiTibaPram = infoRitPram.terminalAkhir || "";
+  if(!lokasiTibaPram && infoRitPram.terminal){
+    var upTAwal = String(infoRitPram.terminal).toUpperCase().trim();
+    if(upTAwal === "BUKATEJA") lokasiTibaPram = "BULUPITU"; else if(upTAwal === "BULUPITU") lokasiTibaPram = "BUKATEJA";
+  }
+  if(!lokasiTibaPram){ lokasiTibaPram = infoArahPram.arah === "BP" ? "BULUPITU" : "BUKATEJA"; }
+
+  var ritTampil = String(parseInt(rit.replace(/[^0-9]/g,""),10) || rit);
+  var busTampil = String(parseInt(lb.replace(/[^0-9]/g,""),10) || lb);
+  var barangList = [], riwKasir = bacaStorage(STORAGE_KASIR_KEY);
+  for(var idxK=0;idxK<riwKasir.length;idxK++){
+    var rk = riwKasir[idxK];
+    if(rk && rk.adaLostFound && rk.lostFoundData && rk.lostFoundData.ID_PERJALANAN === idp && rk.lostFoundData.NMA_BARANG) barangList.push(rk.lostFoundData.NMA_BARANG);
+  }
+
+  var kirimFinal = function(namaPramudi){
+    var payload = {
+      action: "savePramujasa", tanggal: tgl, sheetGlobal: "DATA_PRAMUJASA", sheetDetail: "DETAIL_" + tglCompact,
+      globalData: { ID_PRAMUJASA_TRANSAKSI: idPramTransaksi, ID_PERJALANAN: idp, ID_PRAMUJASA: petugas, ID_PRAMUDI: pramudiDipilih.id || "", PRAMUDI: namaPramudi || "", SHIFT: shift, ID_LOKASI: idHalte, JAM_TIBA: jamTiba, TOTAL_PNP_NAIK: ringkasRit.totalRit, TOTAL_PNP_TURUN: ringkasRit.totalTurunRit, TOTAL_TUNAI: ringkasRit.tunai, TOTAL_NON_TUNAI: ringkasRit.nonTunai, TOTAL_MANUAL: 0, STATUS_VALIDASI: "TERVALIDASI", CREATED_AT: nowTs, CREATED_BY: petugas, KETERANGAN: ket, UPDATED_AT: nowTs, UPDATED_BY: petugas },
+      detailList: listDetailKirim
+    };
+
+    pesanPram = "✅ *TEMAN ANTENG - VALIDASI PRAMUJASA*\nLokasi tiba : " + lokasiTibaPram + "\nRit : " + ritTampil + " | Bus : " + busTampil + "\nID_PERJALANAN " + idp + "\nPnp E-ticketing : " + ringkasRit.nonTunai + "\nPnp Transit : 0\nPnp PPT : " + ringkasRit.tunai + "\nTotal pnp : " + ringkasRit.totalRit + "\nPnp Turun : " + ringkasRit.totalTurunRit + "\nJam tiba : " + String(jamTiba||"").replace(":",".") + "\nPramujasa : " + petugas + "\nPramudi : " + (namaPramudi || "") + "\nKet : " + (ket !== "-" ? ket : "") + "\nBarang tertinggal: " + barangList.join(", ");
+
+    var selesaiSukses = function(){
+      document.getElementById("load").style.display = "none";
+      if(btnKirim) btnKirim.disabled = false; if(btnTemp) btnTemp.disabled = false;
+      var latest = bacaStorage(STORAGE_KEY_PRAM);
+      for(var j=0;j<latest.length;j++){ if(latest[j].idPerjalanan === idp && sentDetailIds[latest[j].idDetail]){ latest[j].status = "TERVALIDASI"; latest[j].idTransaksi = idPramTransaksi; } }
+      markSavedIdHtml(IDS_PRAM_KEY, idp);
+      tulisStorage(STORAGE_KEY_PRAM, latest);
+      refreshAkumulasiPram(); tampilTransaksiSementaraPram(); tampilRiwayatPram(); cekSudahKirimPram();
+      tampilkanBoxWA("waBoxPram", "bwaPram", "waPrevPram", pesanPram);
+      document.getElementById("bnextPram").style.display = "block";
+      tampilToast("Data 1 rit (" + listDetailKirim.length + " halte) tervalidasi & dikirim ke database!", "ok");
+    };
+    var selesaiGagal = function(){
+      document.getElementById("load").style.display = "none";
+      if(btnKirim) btnKirim.disabled = false; if(btnTemp) btnTemp.disabled = false;
+      var latest = bacaStorage(STORAGE_KEY_PRAM);
+      for(var j=0;j<latest.length;j++){ if(latest[j].idPerjalanan === idp && sentDetailIds[latest[j].idDetail]) latest[j].status = "GAGAL_KIRIM"; }
+      tulisStorage(STORAGE_KEY_PRAM, latest);
+      refreshAkumulasiPram(); tampilTransaksiSementaraPram(); tampilRiwayatPram(); cekSudahKirimPram();
+      tampilToast("Gagal terhubung ke server. Data ditandai GAGAL_KIRIM & siap kirim ulang.", "err");
+    };
+    fetch(API_PRAMUJASA, { method: "POST", mode: "no-cors", headers: {"Content-Type": "text/plain"}, body: JSON.stringify(payload) })
+      .then(selesaiSukses)["catch"](selesaiGagal);
+  };
+
+  if(pramudiDipilih.nama){
+    kirimFinal(pramudiDipilih.nama);
+  } else {
+    fetch(API_TIMER + "?idPerjalanan=" + encodeURIComponent(idp) + "&t=" + Date.now())
+      .then(function(r){ return r.text(); })
+      .then(function(txt){ var tm=null; try{ tm=JSON.parse(txt); }catch(e){} kirimFinal(tm && tm.pramudi ? tm.pramudi : ""); })
+      ["catch"](function(){ kirimFinal(""); });
+  }
+}
+
+function resetFormPram(){ bersihkanInputHalteSaja(); document.getElementById("pramJamTiba").value = jamSekarangHHMM(); sembunyikanBoxWA("waBoxPram", "waPrevPram"); document.getElementById("bnextPram").style.display = "none"; pesanPram = ""; refreshAkumulasiPram(); tampilTransaksiSementaraPram(); cekSudahKirimPram(); try{ window.scrollTo(0,0); }catch(e){} }
+function toggleRiwayatPram(){
+  var box = document.getElementById("boxRiwayatPram"), link = document.getElementById("linkLihatPram");
+  if(box.style.display === "none"){ box.style.display = "block"; link.innerText = "Sembunyikan Riwayat Pramujasa"; tampilRiwayatPram(); }
+  else { box.style.display = "none"; link.innerText = "Lihat Riwayat Pramujasa"; }
+}
+function tampilRiwayatPram(){
+  var data = bacaStorage(STORAGE_KEY_PRAM), hariIni = tglHariIni(), hariIniData = [];
+  for(var i=0;i<data.length;i++){ if(!data[i].tanggal || data[i].tanggal === hariIni) hariIniData.push(data[i]); }
+  document.getElementById("jmlRwPram").innerText = hariIniData.length + " data";
+  document.getElementById("jmlRwMiniPram").innerText = hariIniData.length + " data";
+  var el = document.getElementById("listRwPram"); if(!el) return;
+  if(!hariIniData.length){ el.innerHTML = '<p style="font-size:15px;color:#94a3b8;text-align:center;margin:14px 0">Belum ada data Pramujasa hari ini</p>'; return; }
+  var html = "";
+  for(var j=0;j<hariIniData.length;j++){
+    var d = hariIniData[j], norm = normItemPram(d), st = d.status || "SEMENTARA";
+    var cls = st === "TERVALIDASI" ? "st-ok" : (st === "GAGAL_KIRIM" ? "st-err" : "st-temp");
+    html += '<div class="rw-item"><div style="display:flex;justify-content:space-between;gap:8px"><b>' + escHtml(d.noLambung) + ' | ' + escHtml(d.rit) + ' - ' + escHtml(d.namaHalte) + '</b><span class="' + cls + '">' + escHtml(st) + '</span></div><div style="color:#64748b;font-size:13px">' + escHtml(d.idPerjalanan) + ' · ' + escHtml(d.waktuKirim) + (d.namaPramudi ? ' · Pramudi: ' + escHtml(d.namaPramudi) : '') + '</div><div style="margin-top:6px">Tunai: <b>' + norm.totalTunai + '</b> | Non-Tunai: <b>' + norm.totalNonTunai + '</b> | Total Naik: <b>' + norm.totalHalte + '</b> | Turun: <b>' + escHtml(d.penumpangTurun) + '</b></div>' + (st !== "TERVALIDASI" ? '<div><button type="button" class="btn-mini-link" style="color:#dc2626" onclick="hapusDraftPram(\'' + escHtml(d.idDetail) + '\')">Hapus Draft Lokal</button></div>' : '') + '</div>';
+  }
+  el.innerHTML = html;
+}
+
+/* ==================== MODUL KASIR ==================== */
+var TARIF_TIKET_KASIR = { Umum: 5000, Buruh: 1000, Pelajar: 1000, Lansia: 1000, Disabilitas: 1000, Veteran: 1000 };
+function ambilAngkaKasir(id){ var el = document.getElementById(id); var val = el ? parseInt(el.value,10) : 0; return isNaN(val)||val<0?0:val; }
+function formatRupiah(angka){ var n = parseInt(angka,10); if(isNaN(n)) n=0; return "Rp " + n.toString().replace(/\B(?=(\d{3})+(?!\d))/g,"."); }
+
+function ambilRincianMatriksKasir(){
+  var tunaiPnp={}, tunaiRp={}, nonTunaiPnp={}, nonTunaiRp={}, subTP=0, subTR=0, subNTP=0, subNTR=0;
+  for(var i=0;i<KATEGORI_LIST.length;i++){
+    var kat = KATEGORI_LIST[i], key = kat.toLowerCase(), tarif = TARIF_TIKET_KASIR[kat] || 1000;
+    var tp = ambilAngkaKasir("ksrTunaiPnp"+kat), ntp = ambilAngkaKasir("ksrNonTunaiPnp"+kat);
+    tunaiPnp[key] = tp; tunaiRp[key] = tp*tarif; nonTunaiPnp[key] = ntp; nonTunaiRp[key] = ntp*tarif;
+    subTP += tp; subTR += tp*tarif; subNTP += ntp; subNTR += ntp*tarif;
+  }
+  return { tunaiPnp:tunaiPnp, tunaiRp:tunaiRp, nonTunaiPnp:nonTunaiPnp, nonTunaiRp:nonTunaiRp, subtotalTunaiPnp:subTP, subtotalTunaiRp:subTR, subtotalNonTunaiPnp:subNTP, subtotalNonTunaiRp:subNTR, totalPnpKasir:subTP+subNTP, totalSetoranKasir:subTR+subNTR };
+}
+
+function hitungMatriksKasir(){
+  var m = ambilRincianMatriksKasir();
+  for(var i=0;i<KATEGORI_LIST.length;i++){
+    var kat = KATEGORI_LIST[i], key = kat.toLowerCase();
+    document.getElementById("ksrTunaiRp"+kat).value = formatRupiah(m.tunaiRp[key]);
+    document.getElementById("ksrNonTunaiRp"+kat).value = formatRupiah(m.nonTunaiRp[key]);
+  }
+  document.getElementById("subTunaiPnp").innerText = m.subtotalTunaiPnp + " org";
+  document.getElementById("subTunaiRp").innerText = formatRupiah(m.subtotalTunaiRp);
+  document.getElementById("subNonTunaiPnp").innerText = m.subtotalNonTunaiPnp + " org";
+  document.getElementById("subNonTunaiRp").innerText = formatRupiah(m.subtotalNonTunaiRp);
+  document.getElementById("kasirSetoranTunai").value = formatRupiah(m.subtotalTunaiRp);
+  document.getElementById("kasirSetoranNonTunai").value = formatRupiah(m.subtotalNonTunaiRp);
+  document.getElementById("totalPnpRincianBox").innerText = m.totalPnpKasir + " org";
+  document.getElementById("ringkasTunaiRp").innerText = formatRupiah(m.subtotalTunaiRp);
+  document.getElementById("ringkasNonTunaiRp").innerText = formatRupiah(m.subtotalNonTunaiRp);
+  document.getElementById("totalSetoranBox").innerText = formatRupiah(m.totalSetoranKasir);
+  document.getElementById("statusRekonBox").innerText = "TOTAL SETORAN OTOMATIS: " + formatRupiah(m.totalSetoranKasir) + " (" + m.totalPnpKasir + " ORG)";
+}
+
+function isiLambungKasir(){ var sel = document.getElementById("kasirLb"); if(!sel) return; var h=""; for(var j=0;j<listLB.length;j++) h+='<option value="'+listLB[j]+'">'+listLB[j]+'</option>'; sel.innerHTML=h; }
+function cekSudahKirimKasir(){
+  var idpEl = document.getElementById("kasirIdp"), idp = idpEl ? idpEl.value : "";
+  var riw = bacaStorage(STORAGE_KASIR_KEY), isDup = hasSavedIdHtml(IDS_KASIR_KEY, idp), isFailed = false;
+  for(var i=0;i<riw.length;i++){
+    if(riw[i] && riw[i].idPerjalanan && riw[i].statusKirim !== "GAGAL_KIRIM") markSavedIdHtml(IDS_KASIR_KEY, riw[i].idPerjalanan);
+    if(riw[i] && riw[i].idPerjalanan === idp){
+      if(riw[i].statusKirim !== "GAGAL_KIRIM"){ isDup = true; }
+      else { isFailed = true; }
+    }
+  }
+  var warnEl = document.getElementById("kasirDupWarn"), btn = document.getElementById("btnSimpanKasir");
+  if(isDup){
+    if(warnEl){ warnEl.style.display = "block"; warnEl.style.background = "#fef2f2"; warnEl.style.borderColor = "#fca5a5"; warnEl.style.color = "#991b1b"; warnEl.innerText = "⛔ ID_PERJALANAN SUDAH ADA (" + idp + ")"; }
+    if(btn){ btn.style.backgroundColor = "#b91c1c"; btn.innerText = "ID_PERJALANAN SUDAH ADA"; }
+  } else {
+    if(warnEl) warnEl.style.display = "none";
+    if(btn){ btn.style.backgroundColor = "#16a34a"; btn.innerText = isFailed ? "KIRIM ULANG" : "SIMPAN"; }
+  }
+  return isDup;
+}
+
+function updateIdPerjalananKasir(){
+  var tgl = document.getElementById("kasirTgl").value || tglHariIni();
+  document.getElementById("kasirIdp").value = (document.getElementById("kasirKor").value||"KOR01") + "-" + (document.getElementById("kasirLb").value||"LB01") + (document.getElementById("kasirRit").value||"R01") + tgl.split("-").join("");
+  hitungMatriksKasir(); cekSudahKirimKasir();
+}
+
+function toggleLostAndFound(){
+  var cb = document.getElementById("toggle-lf"), lfBox = document.getElementById("lf-input-box"), showBox = cb && cb.checked;
+  lfBox.style.display = showBox ? "block" : "none";
+  if(showBox){
+    var jamEl = document.getElementById("lfJam"); if(jamEl && !jamEl.value) jamEl.value = jamSekarangHHMM();
+    var ditOlehEl = document.getElementById("lfDitemukanOleh"), ksrNama = document.getElementById("namaKasir").innerText || "Kasir";
+    if(ditOlehEl && !ditOlehEl.value) ditOlehEl.value = ksrNama;
+  }
+}
+
+function bukaSumberFotoKasir(slot, tipe){ var inp = document.getElementById("lfFoto" + slot + (tipe === "cam" ? "Cam" : "Gal")); if(!inp) return; try{ inp.value = ""; }catch(e){} inp.click(); }
+function renderPreviewFotoKasir(slot, dataUrl, labelText){
+  var box = document.getElementById("lfFoto"+slot+"PreviewBox"), img = document.getElementById("lfFoto"+slot+"Img"), info = document.getElementById("lfFoto"+slot+"Info");
+  if(dataUrl && dataUrl !== "-" && dataUrl.indexOf("data:image/") === 0){ FOTO_KASIR_STATE[slot] = dataUrl; img.src = dataUrl; info.innerText = labelText || "Foto siap"; box.style.display = "flex"; }
+  else { FOTO_KASIR_STATE[slot] = "-"; img.src = ""; info.innerText = "Belum ada foto"; box.style.display = "none"; }
+}
+function hapusFotoKasir(slot){
+  try{ document.getElementById("lfFoto"+slot+"Cam").value=""; document.getElementById("lfFoto"+slot+"Gal").value=""; }catch(e){}
+  renderPreviewFotoKasir(slot, "-", "Belum ada foto");
+}
+function kompresDataUrlGambar(rawDataUrl, maxDim, kualitas, callback){
+  var maxChars = 28000;
+  var img = new Image();
+  img.onload = function(){
+    var natW = img.naturalWidth || img.width || 640, natH = img.naturalHeight || img.height || 640;
+    var passes = [
+      [maxDim || 560, kualitas || 0.58],
+      [480, 0.52],
+      [400, 0.45],
+      [320, 0.36],
+      [240, 0.28],
+      [180, 0.22]
+    ];
+    var bestUrl = rawDataUrl, bestW = natW, bestH = natH;
+    try{
+      for(var i=0;i<passes.length;i++){
+        var dim = passes[i][0], q = passes[i][1];
+        var w = natW, h = natH;
+        if(w > dim || h > dim){
+          if(w >= h){ h = Math.max(1, Math.round((h*dim)/w)); w = dim; }
+          else { w = Math.max(1, Math.round((w*dim)/h)); h = dim; }
+        }
+        var canvas = document.createElement("canvas"); canvas.width = w; canvas.height = h;
+        var ctx = canvas.getContext("2d");
+        if(!ctx) break;
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0,0,w,h);
+        ctx.drawImage(img,0,0,w,h);
+        var out = canvas.toDataURL("image/jpeg", q);
+        if(out && out.indexOf("data:image/") === 0){
+          bestUrl = out; bestW = w; bestH = h;
+          if(out.length <= maxChars){
+            callback(out, w, h);
+            return;
+          }
+        }
+      }
+    }catch(e){}
+    callback(bestUrl, bestW, bestH);
+  };
+  img.onerror = function(){ callback(rawDataUrl, 0, 0); };
+  img.src = rawDataUrl;
+}
+function prosesFileFotoKasir(slot, inputEl){
+  var file = inputEl && inputEl.files && inputEl.files[0]; if(!file) return;
+  var isImg = !file.type || file.type.indexOf("image/") === 0 || /\.(jpe?g|png|webp|gif|bmp|heic|heif)$/i.test(file.name || "");
+  if(!isImg){ tampilToast("Pilih file gambar.", "warn"); hapusFotoKasir(slot); return; }
+  var reader = new FileReader();
+  reader.onload = function(evt){
+    var rawUrl = evt && evt.target && evt.target.result ? String(evt.target.result) : "";
+    if(!rawUrl) return;
+    kompresDataUrlGambar(rawUrl, 560, 0.58, function(finalUrl, w, h){
+      var kb = Math.max(1, Math.round((finalUrl.length * 3) / 4 / 1024));
+      renderPreviewFotoKasir(slot, finalUrl, (file.name || ("Foto_" + slot)) + " (" + w + "x" + h + " · ~" + kb + " KB)");
+      tampilToast("Foto " + slot + " siap (~" + kb + " KB).", "ok");
+    });
+  };
+  reader.readAsDataURL(file);
+}
+
+function simpanKasir(){
+  var btnSimpan = document.getElementById("btnSimpanKasir");
+  if(btnSimpan && btnSimpan.disabled) return;
+  var tgl = document.getElementById("kasirTgl").value || tglHariIni(), kor = document.getElementById("kasirKor").value, lb = document.getElementById("kasirLb").value, rit = document.getElementById("kasirRit").value, idp = document.getElementById("kasirIdp").value;
+  var existingRiw = bacaStorage(STORAGE_KASIR_KEY);
+  var kasirSudahAda = hasSavedIdHtml(IDS_KASIR_KEY, idp);
+  for(var dIdxK=0;dIdxK<existingRiw.length;dIdxK++){
+    if(existingRiw[dIdxK] && existingRiw[dIdxK].idPerjalanan === idp && existingRiw[dIdxK].statusKirim !== "GAGAL_KIRIM"){
+      kasirSudahAda = true; break;
+    }
+  }
+  if(kasirSudahAda){
+    tampilToast("ID_PERJALANAN SUDAH ADA", "err");
+    cekSudahKirimKasir();
+    return;
+  }
+  var petugas = document.getElementById("namaKasir").innerText || "Kasir", nowMs = Date.now(), nowTs = timestampSekarang(), idKasirTransaksi = "KSR_" + nowMs;
+  var rm = ambilRincianMatriksKasir();
+  var hasLF = !!(document.getElementById("toggle-lf") && document.getElementById("toggle-lf").checked), dataLF = null, lfDetailText = "-";
+  if(hasLF){
+    var namaBarang = (document.getElementById("lfNamaBarang").value || "").trim();
+    if(!namaBarang){ tampilToast("Nama Barang Lost & Found wajib diisi!", "warn"); document.getElementById("lfNamaBarang").focus(); return; }
+    var jamLF = document.getElementById("lfJam").value || jamSekarangHHMM();
+    var idBarang = "LF_" + tgl.split("-").join("") + "_" + jamLF.replace(":","") + "_" + String(Math.floor(Math.random()*9000)+1000);
+    var desk = (document.getElementById("lfDetail").value || "").trim() || "-", katLF = document.getElementById("lfKategori").value || "Lainnya";
+    lfDetailText = namaBarang + " (" + katLF + ") - " + desk;
+    dataLF = { ID_BARANG: idBarang, TANGGAL: tgl, JAM: jamLF, ID_PERJALANAN: idp, ID_ARMADA: lb, RIT: rit, KORIDOR: kor, LOKASI_DITEMUKAN: (document.getElementById("lfLokasi").value || "").trim() || ("Di Bus " + lb), NMA_BARANG: namaBarang, KATEGORI: katLF, WARNA: (document.getElementById("lfWarna").value || "").trim() || "-", MEREK: (document.getElementById("lfMerek").value || "").trim() || "-", DESKRIPSI: desk, FOTO_1: FOTO_KASIR_STATE[1] !== "-" ? FOTO_KASIR_STATE[1] : "-", FOTO_2: FOTO_KASIR_STATE[2] !== "-" ? FOTO_KASIR_STATE[2] : "-", DITEMUKAN_OLEH: (document.getElementById("lfDitemukanOleh").value || "").trim() || petugas, PENERIMA: (document.getElementById("lfPenerima").value || "").trim() || "Admin Kasir / Kantor Terminal", STATUS: document.getElementById("lfStatus").value || "DI_KANTOR", NAMA_PEMILIK: "-", NO_HP: "-", NO_IDENTITAS: "-", TANGGAL_DIAMBIL: "-", JAM_DIAMBIL: "-", PENERIMA_BARANG: "-", CATATAN: (document.getElementById("lfCatatan").value || "").trim() || "-" };
+  }
+  var ket = (document.getElementById("kasirKet").value || "").trim() || "-";
+  var tPnp = rm.tunaiPnp, ntPnp = rm.nonTunaiPnp;
+  var kasirSheetRow = { ID_KASIR_TRANSAKSI: idKasirTransaksi, ID_PERJALANAN: idp, ID_LOKASI: kor || "KOR01", TUNAI_UMUM: tPnp.umum||0, TUNAI_PELAJAR: tPnp.pelajar||0, TUNAI_BURUH: tPnp.buruh||0, TUNAI_LANSIA: tPnp.lansia||0, TUNAI_VETERAN: tPnp.veteran||0, TUNAI_DISABILITAS: tPnp.disabilitas||0, NONTUNAI_UMUM: ntPnp.umum||0, NONTUNAI_PELAJAR: ntPnp.pelajar||0, NONTUNAI_BURUH: ntPnp.buruh||0, NONTUNAI_LANSIA: ntPnp.lansia||0, NONTUNAI_VETERAN: ntPnp.veteran||0, NONTUNAI_DISABILITAS: ntPnp.disabilitas||0, NONTUNAI__LANSIA: ntPnp.lansia||0, NONTUNAI__VETERAN: ntPnp.veteran||0, NONTUNAI__DISABILITAS: ntPnp.disabilitas||0, MANUAL_UMUM:0, MANUAL_PELAJAR:0, MANUAL_BURUH:0, MANUAL_LANSIA:0, MANUAL_VETERAN:0, MANUAL_DISABILITAS:0, TOTAL_PENUMPANG: rm.totalPnpKasir, TOTAL_PENDAPATAN: rm.totalSetoranKasir, STATUS_VALIDASI: "TERVALIDASI", KETERANGAN: ket, CREATED_AT: nowTs, CREATED_BY: petugas, UPDATED_AT: nowTs, UPDATED_BY: petugas };
+  var item = Object.assign({}, kasirSheetRow, { idKasirTransaksi: idKasirTransaksi, tanggal: tgl, koridor: kor, noLambung: lb, rit: rit, idPerjalanan: idp, petugasKasir: petugas, totalPenumpang: rm.totalPnpKasir, subtotalTunaiPnp: rm.subtotalTunaiPnp, subtotalNonTunaiPnp: rm.subtotalNonTunaiPnp, setoranTunai: rm.subtotalTunaiRp, setoranNonTunai: rm.subtotalNonTunaiRp, totalPendapatan: rm.totalSetoranKasir, adaLostFound: hasLF, rincianLostFound: lfDetailText, lostFoundData: dataLF, statusKirim: API_KASIR ? "MENUNGGU_SYNC" : "TERSIMPAN_LOKAL", waktuCatat: jamSekarangHHMM() });
+
+  var riw = existingRiw.filter(function(r){ return r.idPerjalanan !== idp; });
+  riw.unshift(item);
+  tulisStorage(STORAGE_KASIR_KEY, riw);
+  tampilRiwayatKasir(); cekSudahKirimKasir();
+  document.getElementById("btnNextKasir").style.display = "block";
+  if(btnSimpan) btnSimpan.disabled = true;
+
+  var updateStatusKasir = function(statusBaru){
+    if(statusBaru !== "GAGAL_KIRIM") markSavedIdHtml(IDS_KASIR_KEY, idp);
+    var latest = bacaStorage(STORAGE_KASIR_KEY);
+    for(var i=0;i<latest.length;i++){ if(latest[i].idKasirTransaksi === idKasirTransaksi){ latest[i].statusKirim = statusBaru; break; } }
+    tulisStorage(STORAGE_KASIR_KEY, latest);
+    tampilRiwayatKasir(); cekSudahKirimKasir();
+  };
+
+  var itemTanpaLf = Object.assign({}, item);
+  delete itemTanpaLf.lostFoundData;
+
+  fetch(API_KASIR, { method: "POST", mode: "no-cors", headers: {"Content-Type": "text/plain"}, body: JSON.stringify({ action: "saveKasir", tanggal: tgl, sheetKasir: "DATA_KASIR", sheetLostFound: "DATA_LOST_FOUND", kasirData: kasirSheetRow, data: itemTanpaLf, lostFoundData: dataLF }) })
+    .then(function(){ if(btnSimpan) btnSimpan.disabled = false; updateStatusKasir("TERKIRIM"); tampilToast("Setoran kasir berhasil dikirim ke database.", "ok"); })
+    ["catch"](function(){ if(btnSimpan) btnSimpan.disabled = false; updateStatusKasir("GAGAL_KIRIM"); tampilToast("Gagal terhubung ke server. Data tersimpan lokal.", "err"); });
+}
+
+function resetFormKasir(){
+  for(var i=0;i<KATEGORI_LIST.length;i++){
+    var kat = KATEGORI_LIST[i];
+    document.getElementById("ksrTunaiPnp"+kat).value="0"; document.getElementById("ksrTunaiRp"+kat).value="Rp 0";
+    document.getElementById("ksrNonTunaiPnp"+kat).value="0"; document.getElementById("ksrNonTunaiRp"+kat).value="Rp 0";
+  }
+  document.getElementById("kasirKet").value = "";
+  document.getElementById("toggle-lf").checked = false;
+  document.getElementById("lfJam").value = jamSekarangHHMM();
+  document.getElementById("lfNamaBarang").value = ""; document.getElementById("lfWarna").value = ""; document.getElementById("lfMerek").value = "";
+  document.getElementById("lfLokasi").value = ""; document.getElementById("lfDetail").value = "";
+  document.getElementById("lfDitemukanOleh").value = document.getElementById("namaKasir").innerText || "Kasir";
+  document.getElementById("lfPenerima").value = "Admin Kasir / Kantor Terminal";
+  hapusFotoKasir(1); hapusFotoKasir(2);
+  document.getElementById("lfCatatan").value = ""; document.getElementById("lfKategori").selectedIndex = 5; document.getElementById("lfStatus").selectedIndex = 0;
+  toggleLostAndFound(); document.getElementById("btnNextKasir").style.display = "none"; updateIdPerjalananKasir();
+  try{ window.scrollTo(0,0); }catch(e){}
+}
+
+function tampilRiwayatKasir(){
+  var data = bacaStorage(STORAGE_KASIR_KEY), hariIni = tglHariIni(), hariIniData = [];
+  for(var i=0;i<data.length;i++){ if(!data[i].tanggal || data[i].tanggal === hariIni) hariIniData.push(data[i]); }
+  document.getElementById("jmlRwKasir").innerText = hariIniData.length + " data";
+  var listEl = document.getElementById("listRwKasir");
+  if(!hariIniData.length){ listEl.innerHTML = '<p style="font-size:14px;color:#94a3b8;text-align:center;margin:12px 0">Belum ada setoran kasir hari ini</p>'; return; }
+  var html = "";
+  for(var j=0;j<hariIniData.length;j++){
+    var d = hariIniData[j], isErr = d.statusKirim === "GAGAL_KIRIM";
+    html += '<div class="rw-item"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b>' + escHtml(d.noLambung) + ' | ' + escHtml(d.rit) + '</b><span class="' + (isErr?"st-err":"st-ok") + '">' + escHtml(d.statusKirim||"OK") + '</span></div><div style="color:#64748b;font-size:12px;margin-top:2px">' + escHtml(d.idPerjalanan) + ' · ' + escHtml(d.waktuCatat) + '</div><div style="margin-top:6px;font-weight:700">💰 Total: ' + escHtml(formatRupiah(d.totalPendapatan)) + ' | 👥 Pnp: ' + escHtml(d.totalPenumpang) + '</div><div style="margin-top:4px;font-size:12px;color:#334155;font-weight:700">Tunai: ' + escHtml(d.subtotalTunaiPnp||0) + ' org (' + escHtml(formatRupiah(d.setoranTunai)) + ') · Non-Tunai: ' + escHtml(d.subtotalNonTunaiPnp||0) + ' org (' + escHtml(formatRupiah(d.setoranNonTunai)) + ')</div>' + (d.adaLostFound ? '<div style="margin-top:4px;color:#991b1b;font-size:12px;font-weight:700">🎒 Lost &amp; Found: ' + escHtml(d.rincianLostFound) + '</div>' : '') + '</div>';
+  }
+  listEl.innerHTML = html;
+}
+
+function refreshBackupStatsUI(){
+  var t = bacaStorage("anteng_riwayat").length;
+  var p = bacaStorage("anteng_riwayat_ppa").length;
+  var pj = bacaStorage(STORAGE_KEY_PRAM).length;
+  var k = bacaStorage(STORAGE_KASIR_KEY).length;
+  var el = document.getElementById("backupStatsTxt");
+  if(el) el.innerText = "Data lokal perangkat: " + (t+p+pj+k) + " transaksi (Timer " + t + " · PPA " + p + " · Pramujasa " + pj + " · Kasir " + k + ")";
+}
+
+function downloadBackupHtml(){
+  var tData = bacaStorage("anteng_riwayat");
+  var pData = bacaStorage("anteng_riwayat_ppa");
+  var pjData = bacaStorage(STORAGE_KEY_PRAM);
+  var kData = bacaStorage(STORAGE_KASIR_KEY);
+  var now = new Date();
+  var stamp = now.getFullYear() + pad2(now.getMonth()+1) + pad2(now.getDate()) + "-" + pad2(now.getHours()) + pad2(now.getMinutes());
+  var waktuLabel = timestampSekarang();
+  var filename = "backup-data-teman-anteng-" + stamp + ".html";
+  var snapshot = {
+    app: "TEMAN ANTENG - Teknologi Manajemen Transjateng",
+    exportedAt: waktuLabel,
+    version: 1,
+    data: {
+      anteng_riwayat: tData,
+      anteng_riwayat_ppa: pData,
+      anteng_riwayat_pramujasa: pjData,
+      anteng_riwayat_kasir: kData
+    }
+  };
+  var jsonEmbedded = JSON.stringify(snapshot).replace(/<\/script/gi, "<\\/script");
+
+  var tRows = tData.map(function(d){ return "<tr><td>"+escHtml(d.tanggal)+"</td><td>"+escHtml(d.idPerjalanan)+"</td><td>"+escHtml(d.noLambung)+" / "+escHtml(d.rit)+"</td><td>"+escHtml(d.jadwal)+" -> "+escHtml(d.aktual)+"</td><td>"+escHtml(d.pnpNaik)+" / Tr:"+escHtml(d.pnpTransit)+" / Tur:"+escHtml(d.pnpTurun)+"</td><td>"+escHtml(d.petugas)+"</td><td>"+escHtml(d.status)+"</td></tr>"; }).join("");
+  var pRows = pData.map(function(d){ return "<tr><td>"+escHtml(d.tanggal)+"</td><td>"+escHtml(d.idPerjalanan)+"</td><td>"+escHtml(d.pos)+"</td><td>"+escHtml(d.jamTiba)+"</td><td>All:"+escHtml(d.all)+" | Naik:"+escHtml(d.naik)+" | Turun:"+escHtml(d.turun)+"</td><td>"+escHtml(d.headwayPos)+"</td><td>"+escHtml(d.status)+"</td></tr>"; }).join("");
+  var pjRows = pjData.map(function(d){
+    var n = normItemPram(d);
+    return "<tr><td>"+escHtml(d.tanggal)+"</td><td>"+escHtml(d.idPerjalanan)+"</td><td>"+escHtml(d.namaHalte)+" ("+escHtml(d.idHalte)+")</td><td>"+escHtml(d.namaPramudi||"-")+"</td><td>Tunai "+n.totalTunai+" (U:"+(n.tunai.umum||0)+", B:"+(n.tunai.buruh||0)+", P:"+(n.tunai.pelajar||0)+", L:"+(n.tunai.lansia||0)+", D:"+(n.tunai.disabilitas||0)+", V:"+(n.tunai.veteran||0)+")</td><td>Non-Tunai "+n.totalNonTunai+" (U:"+(n.nonTunai.umum||0)+", B:"+(n.nonTunai.buruh||0)+", P:"+(n.nonTunai.pelajar||0)+", L:"+(n.nonTunai.lansia||0)+", D:"+(n.nonTunai.disabilitas||0)+", V:"+(n.nonTunai.veteran||0)+")</td><td>Naik:"+n.totalHalte+" | Turun:"+escHtml(d.penumpangTurun)+"</td><td>"+escHtml(d.status)+"</td></tr>";
+  }).join("");
+  var kRows = kData.map(function(d){ return "<tr><td>"+escHtml(d.tanggal)+"</td><td>"+escHtml(d.idPerjalanan)+"</td><td>"+escHtml(d.noLambung)+" / "+escHtml(d.rit)+"</td><td>Tunai: "+escHtml(formatRupiah(d.setoranTunai||0))+"</td><td>Non-Tunai: "+escHtml(formatRupiah(d.setoranNonTunai||0))+"</td><td>"+escHtml(formatRupiah(d.totalPendapatan||0))+" ("+escHtml(d.totalPenumpang)+" pnp)</td><td>"+escHtml(d.statusKirim)+"</td></tr>"; }).join("");
+
+  var html = '<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Backup Data TEMAN ANTENG (' + escHtml(stamp) + ')</title><style>body{font-family:Segoe UI,Arial,sans-serif;background:#f8fafc;color:#0f172a;margin:0;padding:20px}.wrap{max-width:1100px;margin:0 auto;background:#fff;border:1px solid #cbd5e1;border-radius:16px;padding:24px}h1{margin:0 0 6px;font-size:22px;color:#b91c1c}.meta{color:#475569;font-size:13px;margin-bottom:18px}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:20px}.card{background:#f1f5f9;border:1px solid #cbd5e1;border-radius:12px;padding:12px;text-align:center}.card b{display:block;font-size:22px}.card span{font-size:12px;color:#475569;font-weight:700}h2{font-size:16px;margin:22px 0 8px;padding-bottom:6px;border-bottom:2px solid #e2e8f0}.tbl-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #cbd5e1;padding:7px 9px;text-align:left;vertical-align:top}th{background:#f8fafc;font-weight:800}.empty{color:#64748b;font-style:italic;font-size:13px;padding:10px 0}</style></head><body><div class="wrap"><h1>BACKUP DATA OPERASIONAL - TEMAN ANTENG</h1><div class="meta">Waktu Ekspor: <b>' + escHtml(waktuLabel) + '</b></div><div class="cards"><div class="card"><b>' + tData.length + '</b><span>Data Timer</span></div><div class="card"><b>' + pData.length + '</b><span>Data PPA</span></div><div class="card"><b>' + pjData.length + '</b><span>Data Pramujasa</span></div><div class="card"><b>' + kData.length + '</b><span>Data Kasir</span></div></div><h2>1. Riwayat Timer</h2>' + (tRows ? '<div class="tbl-wrap"><table><thead><tr><th>Tanggal</th><th>ID Perjalanan</th><th>Bus / Rit</th><th>Jadwal -> Aktual</th><th>Penumpang</th><th>Petugas</th><th>Status</th></tr></thead><tbody>' + tRows + '</tbody></table></div>' : '<div class="empty">Belum ada data Timer.</div>') + '<h2>2. Riwayat PPA</h2>' + (pRows ? '<div class="tbl-wrap"><table><thead><tr><th>Tanggal</th><th>ID Perjalanan</th><th>POS</th><th>Jam Tiba</th><th>Penumpang</th><th>Headway</th><th>Status</th></tr></thead><tbody>' + pRows + '</tbody></table></div>' : '<div class="empty">Belum ada data PPA.</div>') + '<h2>3. Riwayat Pramujasa</h2>' + (pjRows ? '<div class="tbl-wrap"><table><thead><tr><th>Tanggal</th><th>ID Perjalanan</th><th>Halte</th><th>Pramudi</th><th>Tunai</th><th>Non-Tunai</th><th>Total</th><th>Status</th></tr></thead><tbody>' + pjRows + '</tbody></table></div>' : '<div class="empty">Belum ada data Pramujasa.</div>') + '<h2>4. Riwayat Kasir</h2>' + (kRows ? '<div class="tbl-wrap"><table><thead><tr><th>Tanggal</th><th>ID Perjalanan</th><th>Bus / Rit</th><th>Tunai</th><th>Non-Tunai</th><th>Total</th><th>Status</th></tr></thead><tbody>' + kRows + '</tbody></table></div>' : '<div class="empty">Belum ada data Kasir.</div>') + '</div><script id="anteng-backup-json" type="application/json">' + jsonEmbedded + '<\/script></body></html>';
+
+  var blob = new Blob([html], { type: "text/html;charset=utf-8" });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  refreshBackupStatsUI();
+  tampilToast("File backup " + filename + " berhasil diunduh!", "ok");
+}
+
+function restoreBackupFile(inp){
+  var file = inp && inp.files && inp.files[0];
+  try{ if(inp) inp.value = ""; }catch(e){}
+  if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(evt){
+    try{
+      var raw = String((evt && evt.target && evt.target.result) || "").trim();
+      var m = raw.match(/<script[^>]*id=["']anteng-backup-json["'][^>]*>([\s\S]*?)<\/script>/i);
+      var jsonTxt = (m && m[1]) ? m[1].trim() : raw;
+      var parsed = JSON.parse(jsonTxt);
+      if(!parsed || !parsed.data) throw new Error("Invalid");
+      var keys = ["anteng_riwayat", "anteng_riwayat_ppa", STORAGE_KEY_PRAM, STORAGE_KASIR_KEY];
+      for(var i=0;i<keys.length;i++){
+        var k = keys[i];
+        if(Object.prototype.toString.call(parsed.data[k]) === "[object Array]"){
+          tulisStorage(k, parsed.data[k]);
+        }
+      }
+      refreshBackupStatsUI();
+      tampilToast("Backup data berhasil dipulihkan!", "ok");
+    }catch(e){
+      tampilToast("Gagal membaca file backup HTML/JSON.", "err");
+    }
+  };
+  reader.readAsText(file);
+}
+
+refreshBackupStatsUI();
+loadMasterDariSheet();
+</script>
+</body>
+</html>

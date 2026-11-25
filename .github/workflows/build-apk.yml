@@ -1,0 +1,68 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Install Dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Build Web App
+        run: npm run build
+
+      - name: Ensure Capacitor Config
+        run: |
+          rm -f capacitor.config.js capacitor.config.ts capacitor.config.mjs
+          if [ ! -f "capacitor.config.json" ]; then
+            cat > capacitor.config.json <<'EOF'
+          {
+            "appId": "com.transjateng.temananteng",
+            "appName": "TEMAN ANTENG",
+            "webDir": "dist",
+            "server": {
+              "androidScheme": "https",
+              "cleartext": true
+            }
+          }
+          EOF
+          fi
+
+      - name: Add Android Platform & Sync
+        run: |
+          if [ ! -d "android" ]; then
+            npx cap add android
+          fi
+          npx cap sync android
+
+      - name: Build APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --stacktrace --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v5
+        with:
+          name: teman-anteng-apk
+          path: android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error

@@ -1,0 +1,6 @@
+{
+  "name": "TEMAN ANTENG - Teknologi Manajemen Transjateng",
+  "description": "Aplikasi operasional lapangan BRT Trans Jateng untuk petugas Timer, PPA, Pramujasa, Kasir, dan Lost & Found.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

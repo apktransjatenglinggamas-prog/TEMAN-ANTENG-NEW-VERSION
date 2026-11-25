@@ -1,0 +1,9 @@
+{
+	"appId": "com.transjateng.temananteng",
+	"appName": "TEMAN ANTENG",
+	"webDir": "dist",
+	"server": {
+		"androidScheme": "https",
+		"cleartext": true
+	}
+}
