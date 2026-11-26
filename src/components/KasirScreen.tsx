@@ -2,6 +2,8 @@
 // Total Penumpang & Total Setoran = Tunai + Non-Tunai + Manual.
 // PPT terpisah, Rp-nya 0, tidak masuk total.
 // Manual & PPT per kategori disimpan di record (field rincianManualPnp / rincianPptPnp).
+// BLOK JENIS BISA DILIPAT: tiap jenis punya tombol Lihat / Sembunyikan
+// supaya halaman pendek di HP. Menutup blok TIDAK menghapus isi input.
 import { ChangeEvent, Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
@@ -46,9 +48,7 @@ import {
 } from '../utils/anteng';
 import { BrandLogo } from './BrandLogo';
 
-
 const KASIR_DRAFT_KEY = 'anteng_kasir_draft';
-
 
 interface KasirDraft {
   tanggal: string;
@@ -77,7 +77,6 @@ interface KasirDraft {
   lfCatatan: string;
 }
 
-
 function readKasirDraft(today: string): Partial<KasirDraft> {
   try {
     const raw =
@@ -98,7 +97,6 @@ function readKasirDraft(today: string): Partial<KasirDraft> {
   }
   return {};
 }
-
 
 function writeKasirDraft(draft: KasirDraft | null) {
   try {
@@ -133,11 +131,11 @@ function writeKasirDraft(draft: KasirDraft | null) {
       const compactDraft: KasirDraft = {
         ...draft,
         lfFoto1: {
-          url: draft.lfFoto1.url.startsWith('data:image/') ? '[Tersimpan di Sesi]' : draft.lfFoto1.url,
+          url: draft.lfFoto1.url.startsWith('data:[STRIPPED]) ? '[Tersimpan di Sesi]' : draft.lfFoto1.url,
           info: draft.lfFoto1.info,
         },
         lfFoto2: {
-          url: draft.lfFoto2.url.startsWith('data:image/') ? '[Tersimpan di Sesi]' : draft.lfFoto2.url,
+          url: draft.lfFoto2.url.startsWith('data:[STRIPPED]) ? '[Tersimpan di Sesi]' : draft.lfFoto2.url,
           info: draft.lfFoto2.info,
         },
       };
@@ -156,7 +154,6 @@ function writeKasirDraft(draft: KasirDraft | null) {
   }
 }
 
-
 export interface CategoryBreakdownRow {
   key: KategoriKey;
   label: string;
@@ -171,7 +168,6 @@ export interface CategoryBreakdownRow {
   totalPnp: number;
   totalRp: number;
 }
-
 
 export function computeCategoryBreakdown(records: KasirRecord[]) {
   const rows: CategoryBreakdownRow[] = KATEGORI_LIST.map((kat) => {
@@ -219,7 +215,6 @@ export function computeCategoryBreakdown(records: KasirRecord[]) {
       pptPnp += pp;
     }
 
-
     return {
       key: kat.key,
       label: kat.label,
@@ -238,7 +233,6 @@ export function computeCategoryBreakdown(records: KasirRecord[]) {
     };
   });
 
-
   const subtotalTunaiPnp = rows.reduce((acc, r) => acc + r.tunaiPnp, 0);
   const subtotalTunaiRp = rows.reduce((acc, r) => acc + r.tunaiRp, 0);
   const subtotalNonTunaiPnp = rows.reduce((acc, r) => acc + r.nonTunaiPnp, 0);
@@ -248,7 +242,6 @@ export function computeCategoryBreakdown(records: KasirRecord[]) {
   const subtotalPptPnp = rows.reduce((acc, r) => acc + r.pptPnp, 0);
   const totalPnp = subtotalTunaiPnp + subtotalNonTunaiPnp + subtotalManualPnp;
   const totalRp = subtotalTunaiRp + subtotalNonTunaiRp + subtotalManualRp;
-
 
   return {
     rows,
@@ -264,14 +257,12 @@ export function computeCategoryBreakdown(records: KasirRecord[]) {
   };
 }
 
-
 interface KasirScreenProps {
   petugasNama: string;
   onBackToLogin: () => void;
   onOpenLostFound: () => void;
   showToast: (msg: string, type?: ToastType) => void;
 }
-
 
 export function KasirScreen({
   petugasNama,
@@ -320,7 +311,6 @@ export function KasirScreen({
   const [showDetailPerShift, setShowDetailPerShift] = useState<boolean>(false);
   const [showRiwayatSetoran, setShowRiwayatSetoran] = useState<boolean>(false);
 
-
   const [tunaiPnp, setTunaiPnp] = useState<KategoriCounts>(
     () => initialDraft.tunaiPnp || emptyKategoriCounts()
   );
@@ -335,6 +325,16 @@ export function KasirScreen({
   );
   const [ket, setKet] = useState(initialDraft.ket || '');
 
+  // === BARU: lipat/buka tiap blok jenis (biar halaman pendek di HP) ===
+  // Default: hanya TUNAI terbuka, 3 lainnya tertutup.
+  const [openJenis, setOpenJenis] = useState({
+    tunai: true,
+    nonTunai: false,
+    manual: false,
+    ppt: false,
+  });
+  const toggleJenis = (jenis: 'tunai' | 'nonTunai' | 'manual' | 'ppt') =>
+    setOpenJenis((prev) => ({ ...prev, [jenis]: !prev[jenis] }));
 
   // Lost & Found state
   const [adaLF, setAdaLF] = useState(Boolean(initialDraft.adaLF));
@@ -359,7 +359,6 @@ export function KasirScreen({
   );
   const [lfStatus, setLfStatus] = useState(initialDraft.lfStatus || 'DI_KANTOR');
   const [lfCatatan, setLfCatatan] = useState(initialDraft.lfCatatan || '');
-
 
   useEffect(() => {
     writeKasirDraft({
@@ -415,7 +414,6 @@ export function KasirScreen({
     lfCatatan,
   ]);
 
-
   const [riwayat, setRiwayat] = useState<KasirRecord[]>(() =>
     bacaStorage<KasirRecord>(STORAGE_KASIR_KEY)
   );
@@ -424,18 +422,15 @@ export function KasirScreen({
   const [photoBusyCount, setPhotoBusyCount] = useState(0);
   const [showNextBtn, setShowNextBtn] = useState(false);
 
-
   const foto1CamRef = useRef<HTMLInputElement>(null);
   const foto1GalRef = useRef<HTMLInputElement>(null);
   const foto2CamRef = useRef<HTMLInputElement>(null);
   const foto2GalRef = useRef<HTMLInputElement>(null);
 
-
   const idPerjalanan = useMemo(
     () => `${koridor}-${lb}${rit}${tanggal.split('-').join('')}`,
     [koridor, lb, rit, tanggal]
   );
-
 
   const matriks = useMemo(() => {
     const tunaiRp = emptyKategoriCounts();
@@ -487,7 +482,6 @@ export function KasirScreen({
     };
   }, [tunaiPnp, nonTunaiPnp, manualPnp, pptPnp]);
 
-
   useEffect(() => {
     for (const r of riwayat) {
       if (r?.idPerjalanan && r.statusKirim !== 'GAGAL_KIRIM') {
@@ -495,7 +489,6 @@ export function KasirScreen({
       }
     }
   }, [riwayat]);
-
 
   const existingValidRecord = useMemo(
     () =>
@@ -506,7 +499,6 @@ export function KasirScreen({
     [riwayat, idPerjalanan]
   );
 
-
   const existingFailedRecord = useMemo(
     () =>
       riwayat.find(
@@ -515,12 +507,10 @@ export function KasirScreen({
     [riwayat, idPerjalanan]
   );
 
-
   const displayedRiwayat = useMemo(
     () => (filterHariIni ? riwayat.filter((r) => !r.tanggal || r.tanggal === tanggal) : riwayat),
     [riwayat, filterHariIni, tanggal]
   );
-
 
   const handleRitChange = (newRit: string) => {
     setRit(newRit);
@@ -528,12 +518,10 @@ export function KasirScreen({
     setShift(!isNaN(rNum) && rNum >= 5 ? 'SHIFT 2' : 'SHIFT 1');
   };
 
-
   const todayKasirRecords = useMemo(
     () => riwayat.filter((r) => !r.tanggal || r.tanggal === tanggal),
     [riwayat, tanggal]
   );
-
 
   const summaryHariIni = useMemo(() => {
     let totalSetoran = 0;
@@ -546,16 +534,13 @@ export function KasirScreen({
     let totalManualPnp = 0;
     let totalPptPnp = 0;
 
-
     let shift1Rp = 0;
     let shift1Pnp = 0;
     let shift1Count = 0;
 
-
     let shift2Rp = 0;
     let shift2Pnp = 0;
     let shift2Count = 0;
-
 
     for (const r of todayKasirRecords) {
       const tot = Number(r.totalPendapatan) || 0;
@@ -579,10 +564,8 @@ export function KasirScreen({
       totalManualPnp += mPnp;
       totalPptPnp += ppPnp;
 
-
       const rNum = parseInt(String(r.rit || '').replace(/\D/g, ''), 10);
       const isShift2 = r.shift?.toUpperCase().includes('2') || (!isNaN(rNum) && rNum >= 5);
-
 
       if (isShift2) {
         shift2Rp += tot;
@@ -594,7 +577,6 @@ export function KasirScreen({
         shift1Count += 1;
       }
     }
-
 
     return {
       totalSetoran,
@@ -611,7 +593,6 @@ export function KasirScreen({
       shift2: { rp: shift2Rp, pnp: shift2Pnp, count: shift2Count },
     };
   }, [todayKasirRecords]);
-
 
   const detailPerShiftPerLambung = useMemo(() => {
     const map: Record<
@@ -634,7 +615,6 @@ export function KasirScreen({
       }
     > = {};
 
-
     for (const b of LIST_LB) {
       map[b] = {
         lb: b,
@@ -645,7 +625,6 @@ export function KasirScreen({
         hasData: false,
       };
     }
-
 
     for (const r of todayKasirRecords) {
       const b = r.noLambung || 'LB01';
@@ -660,12 +639,10 @@ export function KasirScreen({
         };
       }
 
-
       const tot = Number(r.totalPendapatan) || 0;
       const pnp = Number(r.totalPenumpang) || 0;
       const rNum = parseInt(String(r.rit || '').replace(/\D/g, ''), 10);
       const isShift2 = r.shift?.toUpperCase().includes('2') || (!isNaN(rNum) && rNum >= 5);
-
 
       const targetShift = isShift2 ? map[b].shift2 : map[b].shift1;
       targetShift.rp += tot;
@@ -677,16 +654,13 @@ export function KasirScreen({
         status: r.statusKirim,
       });
 
-
       map[b].totalRp += tot;
       map[b].totalPnp += pnp;
       map[b].hasData = true;
     }
 
-
     return Object.values(map);
   }, [todayKasirRecords]);
-
 
   const filteredDetailPerShift = useMemo(() => {
     if (filterHanyaSetor) {
@@ -695,12 +669,10 @@ export function KasirScreen({
     return detailPerShiftPerLambung;
   }, [detailPerShiftPerLambung, filterHanyaSetor]);
 
-
   const armadaSudahSetorCount = useMemo(
     () => detailPerShiftPerLambung.filter((d) => d.hasData).length,
     [detailPerShiftPerLambung]
   );
-
 
   const allowedDetailLambungs = useMemo(() => {
     if (selectedDetailTerminal === 'Bukateja') {
@@ -712,7 +684,6 @@ export function KasirScreen({
     return LIST_LB;
   }, [selectedDetailTerminal]);
 
-
   const filteredDetailRecords = useMemo(() => {
     return todayKasirRecords.filter((r) => {
       const term = getTerminalAkhirFromMasterRit(r.noLambung, r.rit);
@@ -720,16 +691,13 @@ export function KasirScreen({
       const isShift2 = r.shift?.toUpperCase().includes('2') || (!isNaN(rNum) && rNum >= 5);
       const shiftName = isShift2 ? 'Shift 2' : 'Shift 1';
 
-
       const matchTerminal =
         selectedDetailTerminal === 'Semua' ||
         term.toLowerCase() === selectedDetailTerminal.toLowerCase();
 
-
       const matchShift =
         selectedDetailShift === 'Semua' ||
         shiftName.toLowerCase() === selectedDetailShift.toLowerCase();
-
 
       const matchLb =
         selectedDetailLb === 'Semua' ||
@@ -737,16 +705,13 @@ export function KasirScreen({
         ((selectedDetailLb === 'LBC01' || selectedDetailLb === 'LBCO1') &&
           (r.noLambung.toUpperCase() === 'LBC01' || r.noLambung.toUpperCase() === 'LBCO1'));
 
-
       return matchTerminal && matchShift && matchLb;
     });
   }, [todayKasirRecords, selectedDetailTerminal, selectedDetailShift, selectedDetailLb]);
 
-
   const detailBreakdown = useMemo(() => {
     return computeCategoryBreakdown(filteredDetailRecords);
   }, [filteredDetailRecords]);
-
 
   const setoranHariIniFilteredRecords = useMemo(() => {
     return todayKasirRecords.filter((r) => {
@@ -762,11 +727,9 @@ export function KasirScreen({
     });
   }, [todayKasirRecords, selectedSetoranTerminal, selectedSetoranShift]);
 
-
   const setoranHariIniBreakdown = useMemo(() => {
     return computeCategoryBreakdown(setoranHariIniFilteredRecords);
   }, [setoranHariIniFilteredRecords]);
-
 
   const rekap4ShiftList = useMemo(() => {
     const combos = [
@@ -798,7 +761,6 @@ export function KasirScreen({
     });
   }, [todayKasirRecords]);
 
-
   const updatePnp = (
     jenis: 'tunai' | 'nonTunai' | 'manual' | 'ppt',
     key: KategoriKey,
@@ -810,7 +772,6 @@ export function KasirScreen({
     else if (jenis === 'manual') setManualPnp((prev) => ({ ...prev, [key]: n }));
     else setPptPnp((prev) => ({ ...prev, [key]: n }));
   };
-
 
   const handleFileChange = async (slot: 1 | 2, e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -840,7 +801,6 @@ export function KasirScreen({
     }
   };
 
-
   const handleToggleLF = (checked: boolean) => {
     setAdaLF(checked);
     if (checked) {
@@ -848,7 +808,6 @@ export function KasirScreen({
       if (!lfDitemukanOleh.trim()) setLfDitemukanOleh(petugasNama);
     }
   };
-
 
   const buildKasirSheetRow = (rec: KasirRecord) => ({
     ID_KASIR_TRANSAKSI: rec.idKasirTransaksi,
@@ -891,7 +850,6 @@ export function KasirScreen({
     UPDATED_AT: rec.createdAt,
     UPDATED_BY: rec.petugasKasir,
   });
-
 
   const kirimKasirKeServer = async (item: KasirRecord) => {
     let dataLF = item.lostFoundData;
@@ -960,7 +918,6 @@ export function KasirScreen({
     }
   };
 
-
   const handleSimpan = async () => {
     if (sending) return;
     if (photoBusyCount > 0) {
@@ -980,10 +937,8 @@ export function KasirScreen({
       return;
     }
 
-
     let dataLF: LostFoundData | null = null;
     let lfDetailText = '-';
-
 
     if (adaLF) {
       const namaBarang = lfNamaBarang.trim();
@@ -999,7 +954,6 @@ export function KasirScreen({
       const foto2Clean = resolveLfPhotoUrl('kasir_draft', 2, lfFoto2.url) || '-';
       if (foto1Clean !== '-') cacheLfPhoto(idBarang, 1, foto1Clean);
       if (foto2Clean !== '-') cacheLfPhoto(idBarang, 2, foto2Clean);
-
 
       lfDetailText = `${namaBarang} (${lfKategori}) - ${deskripsiLF}`;
       dataLF = {
@@ -1031,12 +985,10 @@ export function KasirScreen({
       };
     }
 
-
     const nowMs = Date.now();
     const nowTs = timestampSekarang();
     const idKasirTransaksi = `KSR_${nowMs}`;
     const ketVal = ket.trim() || '-';
-
 
     const item = {
       idKasirTransaksi,
@@ -1076,7 +1028,6 @@ export function KasirScreen({
       createdAt: nowTs,
     } as unknown as KasirRecord;
 
-
     const currentRiw = bacaStorage<KasirRecord>(STORAGE_KASIR_KEY).filter(
       (r) => r.idPerjalanan !== idPerjalanan
     );
@@ -1087,7 +1038,6 @@ export function KasirScreen({
 
     await kirimKasirKeServer(item);
   };
-
 
   const handleReset = () => {
     setTanggal(tglHariIni());
@@ -1116,15 +1066,21 @@ export function KasirScreen({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-
   // ===== Helper: 1 blok jenis (Tunai / Non-Tunai / Manual / PPT) =====
   // Tiap blok berisi 6 kategori di bawahnya. PPT Rp-nya selalu 0
   // (tidak masuk setoran), Manual Rp = pnp x tarif (masuk setoran).
+  // BARU: header blok jadi TOMBOL Lihat / Sembunyikan. Kalau blok
+  // tertutup, hanya header + subtotal yang kelihatan — halaman jadi pendek.
+  // Menutup blok TIDAK menghapus isi input (data tetap di state & draft).
   const renderBlokJenis = (
     jenis: 'tunai' | 'nonTunai' | 'manual' | 'ppt',
     judul: string,
     headClass: string,
-    inputClass: string
+    inputClass: string,
+    subtotalPnp: number,
+    subtotalRp: number,
+    terbuka: boolean,
+    onToggle: () => void
   ) => {
     const pnpState =
       jenis === 'tunai' ? tunaiPnp : jenis === 'nonTunai' ? nonTunaiPnp : jenis === 'manual' ? manualPnp : pptPnp;
@@ -1138,45 +1094,57 @@ export function KasirScreen({
             : emptyKategoriCounts();
     return (
       <div className="border-2 border-slate-300 rounded-2xl overflow-hidden">
-        <div className={`px-3 py-2 text-sm font-extrabold text-center ${headClass}`}>{judul}</div>
-        <div className="p-2.5 space-y-2 bg-white">
-          {KATEGORI_LIST.map((kat) => (
-            <div key={kat.key} className="bg-slate-50 border border-slate-200 rounded-xl p-2.5">
-              <div className="flex justify-between items-center text-sm font-extrabold text-slate-800 mb-2">
-                <span>{kat.label}</span>
-                <span className="text-xs font-mono-num text-slate-500">
-                  Tarif: {formatRupiah(jenis === 'ppt' ? 0 : kat.tarif)}
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-[11px] font-extrabold text-slate-600 mb-1">
-                    Jumlah Pnp {judul.replace('PNP ', '')}
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    placeholder="0"
-                    value={pnpState[kat.key] || ''}
-                    onChange={(e) => updatePnp(jenis, kat.key, e.target.value)}
-                    className={`w-full px-2 py-2 rounded-xl border-2 border-slate-700 bg-white font-mono-num font-extrabold text-center text-sm ${inputClass}`}
-                  />
-                </div>
-                <div>
-                  <span className="block text-[10px] font-bold text-slate-500 mb-0.5">
-                    Setoran {judul.replace('PNP ', '')}
+        <button
+          type="button"
+          onClick={onToggle}
+          className={`w-full px-3 py-2 text-sm font-extrabold text-center flex justify-between items-center gap-2 cursor-pointer ${headClass}`}
+        >
+          <span>{judul}</span>
+          <span className="flex items-center gap-2 text-xs font-extrabold shrink-0">
+            <span className="font-mono-num">{subtotalPnp} org · {formatRupiah(subtotalRp)}</span>
+            <span>{terbuka ? '▲ Sembunyikan' : '▼ Lihat'}</span>
+          </span>
+        </button>
+        {terbuka && (
+          <div className="p-2.5 space-y-2 bg-white">
+            {KATEGORI_LIST.map((kat) => (
+              <div key={kat.key} className="bg-slate-50 border border-slate-200 rounded-xl p-2.5">
+                <div className="flex justify-between items-center text-sm font-extrabold text-slate-800 mb-2">
+                  <span>{kat.label}</span>
+                  <span className="text-xs font-mono-num text-slate-500">
+                    Tarif: {formatRupiah(jenis === 'ppt' ? 0 : kat.tarif)}
                   </span>
-                  <input
-                    type="text"
-                    readOnly
-                    value={formatRupiah(rpState[kat.key])}
-                    className="w-full px-2 py-1.5 rounded-lg border-2 border-emerald-600 bg-emerald-50 font-mono-num font-extrabold text-center text-xs text-emerald-800"
-                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-slate-600 mb-1">
+                      Jumlah Pnp {judul.replace('PNP ', '')}
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      placeholder="0"
+                      value={pnpState[kat.key] || ''}
+                      onChange={(e) => updatePnp(jenis, kat.key, e.target.value)}
+                      className={`w-full px-2 py-2 rounded-xl border-2 border-slate-700 bg-white font-mono-num font-extrabold text-center text-sm ${inputClass}`}
+                    />
+                  </div>
+                  <div>
+                    <span className="block text-[10px] font-bold text-slate-500 mb-0.5">
+                      Setoran {judul.replace('PNP ', '')}
+                    </span>
+                    <input
+                      type="text"
+                      readOnly
+                      value={formatRupiah(rpState[kat.key])}
+                      className="w-full px-2 py-1.5 rounded-lg border-2 border-emerald-600 bg-emerald-50 font-mono-num font-extrabold text-center text-xs text-emerald-800"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   };
@@ -1203,13 +1171,11 @@ export function KasirScreen({
           </button>
         </div>
 
-
         <div className="p-5 space-y-4">
           <div className="text-center">
             <h3 className="text-2xl font-extrabold text-slate-900">{petugasNama}</h3>
             <p className="text-sm font-bold text-slate-500">Petugas Admin Kasir</p>
           </div>
-
 
           <div>
             <label className="block text-xs font-extrabold uppercase text-slate-700 mb-1">
@@ -1222,7 +1188,6 @@ export function KasirScreen({
               className="w-full px-3 py-3 rounded-xl border-2 border-slate-400 bg-slate-200 text-slate-700 font-bold text-center text-lg"
             />
           </div>
-
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <div>
@@ -1280,7 +1245,6 @@ export function KasirScreen({
             </div>
           </div>
 
-
           <div>
             <label className="block text-xs font-extrabold text-center text-slate-700 mb-1">
               ID_PERJALANAN
@@ -1298,21 +1262,19 @@ export function KasirScreen({
             )}
           </div>
 
-
           {/* Matriks Setoran Per Kategori */}
           <div className="bg-white border-2 border-slate-300 rounded-2xl p-3.5 space-y-2.5">
             <div className="text-center">
               <h4 className="text-sm font-extrabold text-slate-900">SETORAN PER KATEGORI (RP)</h4>
               <p className="text-xs font-semibold text-slate-500 mt-0.5">
-                Isi jumlah penumpang per kategori; nominal setoran (Rp) dihitung otomatis
+                Ketuk jenis untuk membuka / menutup isinya — isi jumlah penumpang per kategori; nominal setoran (Rp) dihitung otomatis
               </p>
             </div>
 
-
-            {renderBlokJenis('tunai', 'PNP TUNAI', 'bg-emerald-600 text-white', '')}
-            {renderBlokJenis('nonTunai', 'PNP NON-TUNAI', 'bg-sky-600 text-white', '')}
-            {renderBlokJenis('manual', 'PNP MANUAL', 'bg-amber-500 text-white', '')}
-            {renderBlokJenis('ppt', 'PNP PPT', 'bg-violet-600 text-white', '')}
+            {renderBlokJenis('tunai', 'PNP TUNAI', 'bg-emerald-600 text-white', '', matriks.subTunaiPnp, matriks.subTunaiRp, openJenis.tunai, () => toggleJenis('tunai'))}
+            {renderBlokJenis('nonTunai', 'PNP NON-TUNAI', 'bg-sky-600 text-white', '', matriks.subNonTunaiPnp, matriks.subNonTunaiRp, openJenis.nonTunai, () => toggleJenis('nonTunai'))}
+            {renderBlokJenis('manual', 'PNP MANUAL', 'bg-amber-500 text-white', '', matriks.subManualPnp, matriks.subManualRp, openJenis.manual, () => toggleJenis('manual'))}
+            {renderBlokJenis('ppt', 'PNP PPT', 'bg-violet-600 text-white', '', matriks.subPptPnp, 0, openJenis.ppt, () => toggleJenis('ppt'))}
 
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs font-extrabold text-blue-900 space-y-1">
               <div className="flex justify-between">
@@ -1345,7 +1307,6 @@ export function KasirScreen({
               </div>
             </div>
           </div>
-
 
           <div className="grid grid-cols-3 gap-2">
             <div>
@@ -1383,7 +1344,6 @@ export function KasirScreen({
             </div>
           </div>
 
-
           <div className="bg-slate-50 border-2 border-slate-300 rounded-2xl p-3.5 text-sm space-y-1">
             <div className="flex justify-between font-bold text-slate-700">
               <span>Total Penumpang Terangkut</span>
@@ -1408,7 +1368,6 @@ export function KasirScreen({
             </div>
           </div>
 
-
           {/* Toggle Lost & Found */}
           <label className="bg-amber-100 border-2 border-amber-400 rounded-2xl p-3.5 flex items-center justify-between gap-3 cursor-pointer">
             <div>
@@ -1425,13 +1384,11 @@ export function KasirScreen({
             />
           </label>
 
-
           {adaLF && (
             <div className="bg-red-50 border-2 border-red-300 rounded-2xl p-4 space-y-3">
               <div className="text-center text-sm font-extrabold text-violet-800">
                 FORMULIR LAPORAN LOST &amp; FOUND (DB_LOST_FOUND)
               </div>
-
 
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
@@ -1464,20 +1421,18 @@ export function KasirScreen({
                 </div>
               </div>
 
-
               <div>
                 <label className="block text-xs font-extrabold text-slate-700 mb-1">
                   Nama Barang <span className="text-red-600">*</span>
                 </label>
                 <input
                   type="text"
-                  placeholder="Cth: Dompet Coklat, HP Samsung, Tas Ransel..."
+                  placeholder="Cth: Dompet Coklat, HP 【entity-Samsung¦canonical_name=Samsung】, Tas Ransel..."
                   value={lfNamaBarang}
                   onChange={(e) => setLfNamaBarang(e.target.value)}
                   className="w-full px-3 py-2.5 rounded-xl border-2 border-slate-800 bg-white font-bold text-sm"
                 />
               </div>
-
 
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
@@ -1496,14 +1451,13 @@ export function KasirScreen({
                   </label>
                   <input
                     type="text"
-                    placeholder="Cth: Samsung, Eiger"
+                    placeholder="Cth: 【entity-Samsung¦canonical_name=Samsung】, Eiger"
                     value={lfMerek}
                     onChange={(e) => setLfMerek(e.target.value)}
                     className="w-full px-2.5 py-2 rounded-xl border-2 border-slate-800 bg-white font-bold text-sm"
                   />
                 </div>
               </div>
-
 
               <div>
                 <label className="block text-xs font-extrabold text-slate-700 mb-1">
@@ -1518,7 +1472,6 @@ export function KasirScreen({
                 />
               </div>
 
-
               <div>
                 <label className="block text-xs font-extrabold text-slate-700 mb-1">
                   Deskripsi Rinci Barang
@@ -1531,7 +1484,6 @@ export function KasirScreen({
                   className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-sm font-medium"
                 />
               </div>
-
 
               {/* Upload Foto 1 & 2 */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -1615,7 +1567,6 @@ export function KasirScreen({
                 ))}
               </div>
 
-
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
                   <label className="block text-xs font-extrabold text-slate-700 mb-1">
@@ -1640,7 +1591,6 @@ export function KasirScreen({
                   />
                 </div>
               </div>
-
 
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
@@ -1673,7 +1623,6 @@ export function KasirScreen({
             </div>
           )}
 
-
           <div>
             <label className="block text-xs font-extrabold text-slate-700 mb-1">
               Keterangan (Opsional)
@@ -1686,7 +1635,6 @@ export function KasirScreen({
               className="w-full px-3 py-3 rounded-xl border-2 border-slate-800 bg-white font-bold text-sm"
             />
           </div>
-
 
           <div className="space-y-2.5 pt-1">
             <button
@@ -1708,7 +1656,6 @@ export function KasirScreen({
                 : 'SIMPAN'}
             </button>
 
-
             {showNextBtn && (
               <button
                 type="button"
@@ -1719,7 +1666,6 @@ export function KasirScreen({
               </button>
             )}
 
-
             <button
               type="button"
               onClick={onOpenLostFound}
@@ -1728,7 +1674,6 @@ export function KasirScreen({
               <PackageSearch className="w-5 h-5" /> BARANG TERTINGGAL
             </button>
           </div>
-
 
           {/* 1. SETORAN HARI INI (DENGAN 2 DROPDOWN & 1 BLOK UTAMA) */}
           <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-2xl p-4 shadow-md space-y-3.5 border border-slate-700">
@@ -1752,7 +1697,6 @@ export function KasirScreen({
             </button>
             {showSetoranHariIni && (
               <>
-
 
             {/* 2 Dropdown Filter */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 bg-slate-800/90 p-3 rounded-xl border border-slate-700">
@@ -1784,7 +1728,6 @@ export function KasirScreen({
               </div>
             </div>
 
-
             {/* 1 Blok Setoran Sesuai Pilihan Dropdown */}
             <div className="bg-slate-900/90 border-2 border-emerald-500/50 rounded-2xl p-4 space-y-3">
               <div className="text-center pb-2 border-b border-slate-800">
@@ -1801,7 +1744,6 @@ export function KasirScreen({
                   <span>{setoranHariIniFilteredRecords.length} Rit Disetor</span>
                 </div>
               </div>
-
 
               {/* Ringkasan Tunai, Non-Tunai, Manual & PPT */}
               <div className="grid grid-cols-2 gap-2 text-xs">
@@ -1842,7 +1784,6 @@ export function KasirScreen({
                   </span>
                 </div>
               </div>
-
 
               {/* Uraian per Kategori Penumpang */}
               <div className="overflow-x-auto rounded-xl border border-slate-700">
@@ -1888,7 +1829,6 @@ export function KasirScreen({
               </div>
             </div>
 
-
             {/* Tombol kecil Lihat Rekap 4 Shift */}
             <div className="pt-1 text-center">
               <button
@@ -1898,7 +1838,6 @@ export function KasirScreen({
               >
                 {showRekap4Shift ? '▲ Sembunyikan Rekap 4 Shift' : '▼ Lihat Rekap 4 Shift'}
               </button>
-
 
               {showRekap4Shift && (
                 <div className="mt-2.5 bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs space-y-2 text-left">
@@ -1923,7 +1862,6 @@ export function KasirScreen({
               </>
             )}
           </div>
-
 
           {/* 2. DETAIL SETORAN PER SHIFT */}
           <div className="bg-white border-2 border-slate-300 rounded-2xl p-4 shadow-sm space-y-3.5">
@@ -1950,7 +1888,6 @@ export function KasirScreen({
             {showDetailPerShift && (
               <>
             <div className="flex flex-wrap justify-between items-center gap-2 border-b border-slate-200 pb-2.5">
-
 
               {/* View Switcher: Detail Kategori & Metode vs Tabel Rekap Shift */}
               <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs font-bold">
@@ -1979,7 +1916,6 @@ export function KasirScreen({
               </div>
             </div>
 
-
             {/* Model Dropdown Pencarian Data */}
             <div className="bg-violet-50/60 border border-violet-200 rounded-xl p-3 space-y-2.5">
               <div className="flex flex-wrap justify-between items-center gap-2">
@@ -2003,7 +1939,6 @@ export function KasirScreen({
                 )}
               </div>
 
-
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 {/* Dropdown 1: Pilih Terminal Akhir */}
                 <div>
@@ -2024,7 +1959,6 @@ export function KasirScreen({
                   </select>
                 </div>
 
-
                 {/* Dropdown 2: Pilih Shift */}
                 <div>
                   <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
@@ -2040,7 +1974,6 @@ export function KasirScreen({
                     <option value="Shift 2">Shift 2</option>
                   </select>
                 </div>
-
 
                 {/* Dropdown 3: Pilih No. Lambung (Armada) */}
                 <div>
@@ -2067,7 +2000,6 @@ export function KasirScreen({
               </div>
             </div>
 
-
             {/* Konten Berdasarkan View: Kategori & Metode vs Rekap Shift */}
             {detailSubView === 'kategori' ? (
               <div className="space-y-3">
@@ -2077,7 +2009,6 @@ export function KasirScreen({
                     Ditemukan: <b className="text-violet-700 font-mono-num">{filteredDetailRecords.length}</b> data setoran
                   </span>
                 </div>
-
 
                 {filteredDetailRecords.length === 0 ? (
                   <div className="p-6 text-center bg-slate-50 border border-slate-200 rounded-xl space-y-2">
@@ -2243,7 +2174,6 @@ export function KasirScreen({
                       </table>
                     </div>
 
-
                     {/* Ringkasan Kartu 3 Kolom */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
                       <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-2.5">
@@ -2303,7 +2233,6 @@ export function KasirScreen({
                       </div>
                     </div>
 
-
                     {/* Daftar Rincian Per Lambung Per Shift */}
                     <div className="pt-2 border-t border-slate-200 space-y-2">
                       <div className="font-extrabold text-slate-800 text-xs">
@@ -2317,7 +2246,6 @@ export function KasirScreen({
                           const shiftLabel = item.shift || (isShift2 ? 'SHIFT 2' : 'SHIFT 1');
                           const isCadangan = item.noLambung.toUpperCase().includes('LBC') || item.noLambung.toUpperCase().includes('LBCO');
                           const lbDisplay = isCadangan ? 'LBCO1 (Cadangan)' : item.noLambung;
-
 
                           return (
                             <div
@@ -2359,7 +2287,6 @@ export function KasirScreen({
                       : `Semua Armada (${LIST_LB.length})`}
                   </button>
                 </div>
-
 
                 <div className="overflow-x-auto rounded-xl border border-slate-200">
                   <table className="w-full text-xs text-left border-collapse">
@@ -2460,7 +2387,6 @@ export function KasirScreen({
                                   )}
                                 </td>
                               </tr>
-
 
                               {/* Accordion Rincian Detail Tiap Rit */}
                               {isExpanded && row.hasData && (
@@ -2570,7 +2496,6 @@ export function KasirScreen({
             )}
           </div>
 
-
           {/* Riwayat Kasir */}
           <div className="bg-slate-50 border-2 border-slate-200 rounded-2xl p-4 space-y-2.5">
             <button
@@ -2656,4 +2581,4 @@ export function KasirScreen({
       </div>
     </div>
   );
-}
+  }
