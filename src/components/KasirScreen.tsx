@@ -131,11 +131,15 @@ function writeKasirDraft(draft: KasirDraft | null) {
       const compactDraft: KasirDraft = {
         ...draft,
         lfFoto1: {
-          url: draft.lfFoto1.url.startsWith('data:[STRIPPED]) ? '[Tersimpan di Sesi]' : draft.lfFoto1.url,
+          // PERBAIKAN BUILD: jangan pakai literal 'data:image/' di sini,
+          // karena string itu bisa kepotong / kena sensor saat paste
+          // dan membuat Vite gagal parse. Cek awalan 'data:' saja,
+          // dan placeholder tanpa kurung siku.
+          url: draft.lfFoto1.url.indexOf('data:') === 0 ? 'TERSIMPAN_DI_SESI' : draft.lfFoto1.url,
           info: draft.lfFoto1.info,
         },
         lfFoto2: {
-          url: draft.lfFoto2.url.startsWith('data:[STRIPPED]) ? '[Tersimpan di Sesi]' : draft.lfFoto2.url,
+          url: draft.lfFoto2.url.indexOf('data:') === 0 ? 'TERSIMPAN_DI_SESI' : draft.lfFoto2.url,
           info: draft.lfFoto2.info,
         },
       };
@@ -2581,4 +2585,4 @@ export function KasirScreen({
       </div>
     </div>
   );
-  }
+}
