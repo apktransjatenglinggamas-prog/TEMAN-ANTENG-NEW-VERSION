@@ -1,3 +1,7 @@
+// KasirScreen.tsx — 4 JENIS (Tunai, Non-Tunai, Manual, PPT).
+// Total Penumpang & Total Setoran = Tunai + Non-Tunai + Manual.
+// PPT terpisah, Rp-nya 0, tidak masuk total.
+// Manual & PPT per kategori disimpan di record (field rincianManualPnp / rincianPptPnp).
 import { ChangeEvent, Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
@@ -54,6 +58,8 @@ interface KasirDraft {
   shift?: string;
   tunaiPnp: KategoriCounts;
   nonTunaiPnp: KategoriCounts;
+  manualPnp: KategoriCounts;
+  pptPnp: KategoriCounts;
   ket: string;
   adaLF: boolean;
   lfJam: string;
@@ -159,6 +165,9 @@ export interface CategoryBreakdownRow {
   tunaiRp: number;
   nonTunaiPnp: number;
   nonTunaiRp: number;
+  manualPnp: number;
+  manualRp: number;
+  pptPnp: number;
   totalPnp: number;
   totalRp: number;
 }
@@ -170,15 +179,22 @@ export function computeCategoryBreakdown(records: KasirRecord[]) {
     let tunaiRp = 0;
     let nonTunaiPnp = 0;
     let nonTunaiRp = 0;
-
+    let manualPnp = 0;
+    let manualRp = 0;
+    let pptPnp = 0;
 
     for (const rec of records) {
+      // Field Manual/PPT belum ada di KasirRecord lama -> baca lewat cast agar
+      // record lama (tanpa field itu) tetap terbaca sebagai 0.
+      const loose = rec as unknown as Record<
+        string,
+        Record<string, number> | undefined
+      >;
       const tp = Number(rec.rincianTunaiPnp?.[kat.key]) || 0;
       const tr =
         rec.rincianTunaiRp?.[kat.key] !== undefined
           ? Number(rec.rincianTunaiRp[kat.key]) || 0
           : tp * kat.tarif;
-
 
       const ntp = Number(rec.rincianNonTunaiPnp?.[kat.key]) || 0;
       const ntr =
@@ -186,11 +202,21 @@ export function computeCategoryBreakdown(records: KasirRecord[]) {
           ? Number(rec.rincianNonTunaiRp[kat.key]) || 0
           : ntp * kat.tarif;
 
+      const mp = Number(loose.rincianManualPnp?.[kat.key]) || 0;
+      const mr =
+        loose.rincianManualRp?.[kat.key] !== undefined
+          ? Number(loose.rincianManualRp[kat.key]) || 0
+          : mp * kat.tarif;
+
+      const pp = Number(loose.rincianPptPnp?.[kat.key]) || 0;
 
       tunaiPnp += tp;
       tunaiRp += tr;
       nonTunaiPnp += ntp;
       nonTunaiRp += ntr;
+      manualPnp += mp;
+      manualRp += mr;
+      pptPnp += pp;
     }
 
 
@@ -202,8 +228,13 @@ export function computeCategoryBreakdown(records: KasirRecord[]) {
       tunaiRp,
       nonTunaiPnp,
       nonTunaiRp,
-      totalPnp: tunaiPnp + nonTunaiPnp,
-      totalRp: tunaiRp + nonTunaiRp,
+      manualPnp,
+      manualRp,
+      pptPnp,
+      // Total Pnp & Total Setoran HANYA Tunai + Non-Tunai + Manual.
+      // PPT terpisah, tidak masuk total.
+      totalPnp: tunaiPnp + nonTunaiPnp + manualPnp,
+      totalRp: tunaiRp + nonTunaiRp + manualRp,
     };
   });
 
@@ -212,8 +243,11 @@ export function computeCategoryBreakdown(records: KasirRecord[]) {
   const subtotalTunaiRp = rows.reduce((acc, r) => acc + r.tunaiRp, 0);
   const subtotalNonTunaiPnp = rows.reduce((acc, r) => acc + r.nonTunaiPnp, 0);
   const subtotalNonTunaiRp = rows.reduce((acc, r) => acc + r.nonTunaiRp, 0);
-  const totalPnp = subtotalTunaiPnp + subtotalNonTunaiPnp;
-  const totalRp = subtotalTunaiRp + subtotalNonTunaiRp;
+  const subtotalManualPnp = rows.reduce((acc, r) => acc + r.manualPnp, 0);
+  const subtotalManualRp = rows.reduce((acc, r) => acc + r.manualRp, 0);
+  const subtotalPptPnp = rows.reduce((acc, r) => acc + r.pptPnp, 0);
+  const totalPnp = subtotalTunaiPnp + subtotalNonTunaiPnp + subtotalManualPnp;
+  const totalRp = subtotalTunaiRp + subtotalNonTunaiRp + subtotalManualRp;
 
 
   return {
@@ -222,6 +256,9 @@ export function computeCategoryBreakdown(records: KasirRecord[]) {
     subtotalTunaiRp,
     subtotalNonTunaiPnp,
     subtotalNonTunaiRp,
+    subtotalManualPnp,
+    subtotalManualRp,
+    subtotalPptPnp,
     totalPnp,
     totalRp,
   };
@@ -290,6 +327,12 @@ export function KasirScreen({
   const [nonTunaiPnp, setNonTunaiPnp] = useState<KategoriCounts>(
     () => initialDraft.nonTunaiPnp || emptyKategoriCounts()
   );
+  const [manualPnp, setManualPnp] = useState<KategoriCounts>(
+    () => initialDraft.manualPnp || emptyKategoriCounts()
+  );
+  const [pptPnp, setPptPnp] = useState<KategoriCounts>(
+    () => initialDraft.pptPnp || emptyKategoriCounts()
+  );
   const [ket, setKet] = useState(initialDraft.ket || '');
 
 
@@ -327,6 +370,8 @@ export function KasirScreen({
       shift,
       tunaiPnp,
       nonTunaiPnp,
+      manualPnp,
+      pptPnp,
       ket,
       adaLF,
       lfJam,
@@ -351,6 +396,8 @@ export function KasirScreen({
     shift,
     tunaiPnp,
     nonTunaiPnp,
+    manualPnp,
+    pptPnp,
     ket,
     adaLF,
     lfJam,
@@ -393,37 +440,52 @@ export function KasirScreen({
   const matriks = useMemo(() => {
     const tunaiRp = emptyKategoriCounts();
     const nonTunaiRp = emptyKategoriCounts();
+    const manualRp = emptyKategoriCounts();
     let subTunaiPnp = 0;
     let subTunaiRp = 0;
     let subNonTunaiPnp = 0;
     let subNonTunaiRp = 0;
-
+    let subManualPnp = 0;
+    let subManualRp = 0;
+    let subPptPnp = 0;
 
     for (const k of KATEGORI_LIST) {
       const tp = Math.max(0, tunaiPnp[k.key] || 0);
       const ntp = Math.max(0, nonTunaiPnp[k.key] || 0);
+      const mp = Math.max(0, manualPnp[k.key] || 0);
+      const pp = Math.max(0, pptPnp[k.key] || 0);
       const tr = tp * k.tarif;
       const ntr = ntp * k.tarif;
+      const mr = mp * k.tarif;
       tunaiRp[k.key] = tr;
       nonTunaiRp[k.key] = ntr;
+      manualRp[k.key] = mr;
       subTunaiPnp += tp;
       subTunaiRp += tr;
       subNonTunaiPnp += ntp;
       subNonTunaiRp += ntr;
+      subManualPnp += mp;
+      subManualRp += mr;
+      subPptPnp += pp;
     }
-
 
     return {
       tunaiRp,
       nonTunaiRp,
+      manualRp,
       subTunaiPnp,
       subTunaiRp,
       subNonTunaiPnp,
       subNonTunaiRp,
-      totalPnp: subTunaiPnp + subNonTunaiPnp,
-      totalSetoran: subTunaiRp + subNonTunaiRp,
+      subManualPnp,
+      subManualRp,
+      subPptPnp,
+      // Total Pnp & Total Setoran = Tunai + Non-Tunai + Manual.
+      // PPT terpisah, Rp-nya 0, tidak masuk total.
+      totalPnp: subTunaiPnp + subNonTunaiPnp + subManualPnp,
+      totalSetoran: subTunaiRp + subNonTunaiRp + subManualRp,
     };
-  }, [tunaiPnp, nonTunaiPnp]);
+  }, [tunaiPnp, nonTunaiPnp, manualPnp, pptPnp]);
 
 
   useEffect(() => {
@@ -480,6 +542,9 @@ export function KasirScreen({
     let totalTunaiPnp = 0;
     let totalNonTunaiRp = 0;
     let totalNonTunaiPnp = 0;
+    let totalManualRp = 0;
+    let totalManualPnp = 0;
+    let totalPptPnp = 0;
 
 
     let shift1Rp = 0;
@@ -499,7 +564,10 @@ export function KasirScreen({
       const tPnp = Number(r.subtotalTunaiPnp) || 0;
       const ntRp = Number(r.setoranNonTunai) || Number(r.subtotalNonTunaiRp) || 0;
       const ntPnp = Number(r.subtotalNonTunaiPnp) || 0;
-
+      const loose = r as unknown as Record<string, number | undefined>;
+      const mRp = Number(loose.setoranManual) || Number(loose.subtotalManualRp) || 0;
+      const mPnp = Number(loose.subtotalManualPnp) || 0;
+      const ppPnp = Number(loose.subtotalPptPnp) || 0;
 
       totalSetoran += tot;
       totalPnp += pnp;
@@ -507,6 +575,9 @@ export function KasirScreen({
       totalTunaiPnp += tPnp;
       totalNonTunaiRp += ntRp;
       totalNonTunaiPnp += ntPnp;
+      totalManualRp += mRp;
+      totalManualPnp += mPnp;
+      totalPptPnp += ppPnp;
 
 
       const rNum = parseInt(String(r.rit || '').replace(/\D/g, ''), 10);
@@ -532,6 +603,9 @@ export function KasirScreen({
       totalTunaiPnp,
       totalNonTunaiRp,
       totalNonTunaiPnp,
+      totalManualRp,
+      totalManualPnp,
+      totalPptPnp,
       totalRitCount: todayKasirRecords.length,
       shift1: { rp: shift1Rp, pnp: shift1Pnp, count: shift1Count },
       shift2: { rp: shift2Rp, pnp: shift2Pnp, count: shift2Count },
@@ -725,10 +799,16 @@ export function KasirScreen({
   }, [todayKasirRecords]);
 
 
-  const updatePnp = (jenis: 'tunai' | 'nonTunai', key: KategoriKey, val: string) => {
+  const updatePnp = (
+    jenis: 'tunai' | 'nonTunai' | 'manual' | 'ppt',
+    key: KategoriKey,
+    val: string
+  ) => {
     const n = Math.max(0, parseInt(val, 10) || 0);
     if (jenis === 'tunai') setTunaiPnp((prev) => ({ ...prev, [key]: n }));
-    else setNonTunaiPnp((prev) => ({ ...prev, [key]: n }));
+    else if (jenis === 'nonTunai') setNonTunaiPnp((prev) => ({ ...prev, [key]: n }));
+    else if (jenis === 'manual') setManualPnp((prev) => ({ ...prev, [key]: n }));
+    else setPptPnp((prev) => ({ ...prev, [key]: n }));
   };
 
 
@@ -789,12 +869,19 @@ export function KasirScreen({
     NONTUNAI__LANSIA: rec.rincianNonTunaiPnp?.lansia || 0,
     NONTUNAI__VETERAN: rec.rincianNonTunaiPnp?.veteran || 0,
     NONTUNAI__DISABILITAS: rec.rincianNonTunaiPnp?.disabilitas || 0,
-    MANUAL_UMUM: 0,
-    MANUAL_PELAJAR: 0,
-    MANUAL_BURUH: 0,
-    MANUAL_LANSIA: 0,
-    MANUAL_VETERAN: 0,
-    MANUAL_DISABILITAS: 0,
+    MANUAL_UMUM: (rec as unknown as Record<string, Record<string, number> | undefined>).rincianManualPnp?.umum || 0,
+    MANUAL_PELAJAR: (rec as unknown as Record<string, Record<string, number> | undefined>).rincianManualPnp?.pelajar || 0,
+    MANUAL_BURUH: (rec as unknown as Record<string, Record<string, number> | undefined>).rincianManualPnp?.buruh || 0,
+    MANUAL_LANSIA: (rec as unknown as Record<string, Record<string, number> | undefined>).rincianManualPnp?.lansia || 0,
+    MANUAL_VETERAN: (rec as unknown as Record<string, Record<string, number> | undefined>).rincianManualPnp?.veteran || 0,
+    MANUAL_DISABILITAS: (rec as unknown as Record<string, Record<string, number> | undefined>).rincianManualPnp?.disabilitas || 0,
+    PPT_UMUM: (rec as unknown as Record<string, Record<string, number> | undefined>).rincianPptPnp?.umum || 0,
+    PPT_PELAJAR: (rec as unknown as Record<string, Record<string, number> | undefined>).rincianPptPnp?.pelajar || 0,
+    PPT_BURUH: (rec as unknown as Record<string, Record<string, number> | undefined>).rincianPptPnp?.buruh || 0,
+    PPT_LANSIA: (rec as unknown as Record<string, Record<string, number> | undefined>).rincianPptPnp?.lansia || 0,
+    PPT_VETERAN: (rec as unknown as Record<string, Record<string, number> | undefined>).rincianPptPnp?.veteran || 0,
+    PPT_DISABILITAS: (rec as unknown as Record<string, Record<string, number> | undefined>).rincianPptPnp?.disabilitas || 0,
+    TOTAL_PPT: (rec as unknown as Record<string, number | undefined>).subtotalPptPnp || 0,
     TOTAL_PENUMPANG: rec.totalPenumpang,
     TOTAL_PENDAPATAN: rec.totalPendapatan,
     STATUS_VALIDASI: 'TERVALIDASI',
@@ -880,7 +967,7 @@ export function KasirScreen({
       showToast('Foto sedang diproses, tunggu sebentar lalu klik Simpan lagi.', 'warn');
       return;
     }
-    if (existingFailedRecord && matriks.totalPnp === 0 && !adaLF) {
+    if (existingFailedRecord && matriks.totalPnp === 0 && matriks.subPptPnp === 0 && !adaLF) {
       await kirimKasirKeServer(existingFailedRecord);
       return;
     }
@@ -951,7 +1038,7 @@ export function KasirScreen({
     const ketVal = ket.trim() || '-';
 
 
-    const item: KasirRecord = {
+    const item = {
       idKasirTransaksi,
       tanggal,
       koridor,
@@ -963,16 +1050,23 @@ export function KasirScreen({
       totalPenumpang: matriks.totalPnp,
       subtotalTunaiPnp: matriks.subTunaiPnp,
       subtotalNonTunaiPnp: matriks.subNonTunaiPnp,
+      subtotalManualPnp: matriks.subManualPnp,
+      subtotalPptPnp: matriks.subPptPnp,
       totalPnpRincian: matriks.totalPnp,
       setoranTunai: matriks.subTunaiRp,
       setoranNonTunai: matriks.subNonTunaiRp,
+      setoranManual: matriks.subManualRp,
       subtotalTunaiRp: matriks.subTunaiRp,
       subtotalNonTunaiRp: matriks.subNonTunaiRp,
+      subtotalManualRp: matriks.subManualRp,
       totalPendapatan: matriks.totalSetoran,
       rincianTunaiPnp: { ...tunaiPnp },
       rincianTunaiRp: { ...matriks.tunaiRp },
       rincianNonTunaiPnp: { ...nonTunaiPnp },
       rincianNonTunaiRp: { ...matriks.nonTunaiRp },
+      rincianManualPnp: { ...manualPnp },
+      rincianManualRp: { ...matriks.manualRp },
+      rincianPptPnp: { ...pptPnp },
       adaLostFound: adaLF,
       rincianLostFound: lfDetailText,
       lostFoundData: dataLF,
@@ -980,7 +1074,7 @@ export function KasirScreen({
       statusKirim: API_KASIR ? 'MENUNGGU_SYNC' : 'TERSIMPAN_LOKAL',
       waktuCatat: jamSekarangHHMM(),
       createdAt: nowTs,
-    };
+    } as unknown as KasirRecord;
 
 
     const currentRiw = bacaStorage<KasirRecord>(STORAGE_KASIR_KEY).filter(
@@ -999,6 +1093,8 @@ export function KasirScreen({
     setTanggal(tglHariIni());
     setTunaiPnp(emptyKategoriCounts());
     setNonTunaiPnp(emptyKategoriCounts());
+    setManualPnp(emptyKategoriCounts());
+    setPptPnp(emptyKategoriCounts());
     setShift('SHIFT 1');
     setKet('');
     setAdaLF(false);
@@ -1020,6 +1116,70 @@ export function KasirScreen({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+
+  // ===== Helper: 1 blok jenis (Tunai / Non-Tunai / Manual / PPT) =====
+  // Tiap blok berisi 6 kategori di bawahnya. PPT Rp-nya selalu 0
+  // (tidak masuk setoran), Manual Rp = pnp x tarif (masuk setoran).
+  const renderBlokJenis = (
+    jenis: 'tunai' | 'nonTunai' | 'manual' | 'ppt',
+    judul: string,
+    headClass: string,
+    inputClass: string
+  ) => {
+    const pnpState =
+      jenis === 'tunai' ? tunaiPnp : jenis === 'nonTunai' ? nonTunaiPnp : jenis === 'manual' ? manualPnp : pptPnp;
+    const rpState =
+      jenis === 'tunai'
+        ? matriks.tunaiRp
+        : jenis === 'nonTunai'
+          ? matriks.nonTunaiRp
+          : jenis === 'manual'
+            ? matriks.manualRp
+            : emptyKategoriCounts();
+    return (
+      <div className="border-2 border-slate-300 rounded-2xl overflow-hidden">
+        <div className={`px-3 py-2 text-sm font-extrabold text-center ${headClass}`}>{judul}</div>
+        <div className="p-2.5 space-y-2 bg-white">
+          {KATEGORI_LIST.map((kat) => (
+            <div key={kat.key} className="bg-slate-50 border border-slate-200 rounded-xl p-2.5">
+              <div className="flex justify-between items-center text-sm font-extrabold text-slate-800 mb-2">
+                <span>{kat.label}</span>
+                <span className="text-xs font-mono-num text-slate-500">
+                  Tarif: {formatRupiah(jenis === 'ppt' ? 0 : kat.tarif)}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[11px] font-extrabold text-slate-600 mb-1">
+                    Jumlah Pnp {judul.replace('PNP ', '')}
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    placeholder="0"
+                    value={pnpState[kat.key] || ''}
+                    onChange={(e) => updatePnp(jenis, kat.key, e.target.value)}
+                    className={`w-full px-2 py-2 rounded-xl border-2 border-slate-700 bg-white font-mono-num font-extrabold text-center text-sm ${inputClass}`}
+                  />
+                </div>
+                <div>
+                  <span className="block text-[10px] font-bold text-slate-500 mb-0.5">
+                    Setoran {judul.replace('PNP ', '')}
+                  </span>
+                  <input
+                    type="text"
+                    readOnly
+                    value={formatRupiah(rpState[kat.key])}
+                    className="w-full px-2 py-1.5 rounded-lg border-2 border-emerald-600 bg-emerald-50 font-mono-num font-extrabold text-center text-xs text-emerald-800"
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-slate-100 pb-10">
@@ -1149,67 +1309,10 @@ export function KasirScreen({
             </div>
 
 
-            {KATEGORI_LIST.map((kat) => (
-              <div key={kat.key} className="bg-slate-50 border border-slate-200 rounded-xl p-2.5">
-                <div className="flex justify-between items-center text-sm font-extrabold text-slate-800 mb-2">
-                  <span>{kat.label}</span>
-                  <span className="text-xs font-mono-num text-slate-500">
-                    Tarif: {formatRupiah(kat.tarif)}
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-[11px] font-extrabold text-slate-600 mb-1">
-                      Jumlah Pnp Tunai
-                    </label>
-                    <input
-                      type="number"
-                      min={0}
-                      value={tunaiPnp[kat.key]}
-                      onChange={(e) => updatePnp('tunai', kat.key, e.target.value)}
-                      className="w-full px-2 py-2 rounded-xl border-2 border-slate-700 bg-white font-mono-num font-extrabold text-center text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-extrabold text-slate-600 mb-1">
-                      Jumlah Pnp Non-Tunai
-                    </label>
-                    <input
-                      type="number"
-                      min={0}
-                      value={nonTunaiPnp[kat.key]}
-                      onChange={(e) => updatePnp('nonTunai', kat.key, e.target.value)}
-                      className="w-full px-2 py-2 rounded-xl border-2 border-slate-700 bg-white font-mono-num font-extrabold text-center text-sm"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2 mt-1.5">
-                  <div>
-                    <span className="block text-[10px] font-bold text-slate-500 mb-0.5">
-                      Setoran Tunai
-                    </span>
-                    <input
-                      type="text"
-                      readOnly
-                      value={formatRupiah(matriks.tunaiRp[kat.key])}
-                      className="w-full px-2 py-1.5 rounded-lg border-2 border-emerald-600 bg-emerald-50 font-mono-num font-extrabold text-center text-xs text-emerald-800"
-                    />
-                  </div>
-                  <div>
-                    <span className="block text-[10px] font-bold text-slate-500 mb-0.5">
-                      Setoran Non-Tunai
-                    </span>
-                    <input
-                      type="text"
-                      readOnly
-                      value={formatRupiah(matriks.nonTunaiRp[kat.key])}
-                      className="w-full px-2 py-1.5 rounded-lg border-2 border-emerald-600 bg-emerald-50 font-mono-num font-extrabold text-center text-xs text-emerald-800"
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
-
+            {renderBlokJenis('tunai', 'PNP TUNAI', 'bg-emerald-600 text-white', '')}
+            {renderBlokJenis('nonTunai', 'PNP NON-TUNAI', 'bg-sky-600 text-white', '')}
+            {renderBlokJenis('manual', 'PNP MANUAL', 'bg-amber-500 text-white', '')}
+            {renderBlokJenis('ppt', 'PNP PPT', 'bg-violet-600 text-white', '')}
 
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs font-extrabold text-blue-900 space-y-1">
               <div className="flex justify-between">
@@ -1228,11 +1331,23 @@ export function KasirScreen({
                 <span>Subtotal Setoran Non-Tunai:</span>
                 <span className="font-mono-num">{formatRupiah(matriks.subNonTunaiRp)}</span>
               </div>
+              <div className="flex justify-between pt-1 border-t border-blue-200">
+                <span>Subtotal Pnp Manual:</span>
+                <span className="font-mono-num">{matriks.subManualPnp} org</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Subtotal Setoran Manual:</span>
+                <span className="font-mono-num">{formatRupiah(matriks.subManualRp)}</span>
+              </div>
+              <div className="flex justify-between pt-1 border-t border-blue-200">
+                <span>Subtotal Pnp PPT (tidak masuk setoran):</span>
+                <span className="font-mono-num">{matriks.subPptPnp} org</span>
+              </div>
             </div>
           </div>
 
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-2">
             <div>
               <label className="block text-xs font-extrabold text-slate-700 mb-1">
                 Setoran Tunai (Rp)
@@ -1255,6 +1370,17 @@ export function KasirScreen({
                 className="w-full px-3 py-3 rounded-xl border-2 border-emerald-600 bg-emerald-50 font-mono-num font-extrabold text-center text-emerald-800"
               />
             </div>
+            <div>
+              <label className="block text-xs font-extrabold text-slate-700 mb-1">
+                Setoran Manual (Rp)
+              </label>
+              <input
+                type="text"
+                readOnly
+                value={formatRupiah(matriks.subManualRp)}
+                className="w-full px-3 py-3 rounded-xl border-2 border-emerald-600 bg-emerald-50 font-mono-num font-extrabold text-center text-emerald-800"
+              />
+            </div>
           </div>
 
 
@@ -1266,9 +1392,15 @@ export function KasirScreen({
               </span>
             </div>
             <div className="flex justify-between font-bold text-slate-700">
-              <span>Total Setoran (Tunai + Non-Tunai)</span>
+              <span>Total Setoran (Tunai + Non-Tunai + Manual)</span>
               <span className="font-mono-num font-extrabold text-slate-900">
                 {formatRupiah(matriks.totalSetoran)}
+              </span>
+            </div>
+            <div className="flex justify-between font-bold text-slate-700">
+              <span>Total Pnp PPT (terpisah, tidak masuk setoran)</span>
+              <span className="font-mono-num font-extrabold text-slate-900">
+                {matriks.subPptPnp} org
               </span>
             </div>
             <div className="mt-2 p-2.5 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-900 text-center font-extrabold text-xs">
@@ -1671,7 +1803,7 @@ export function KasirScreen({
               </div>
 
 
-              {/* Ringkasan Tunai & Non-Tunai */}
+              {/* Ringkasan Tunai, Non-Tunai, Manual & PPT */}
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="bg-emerald-950/60 border border-emerald-800/60 rounded-xl p-2.5">
                   <span className="block text-emerald-300 font-bold mb-0.5">Setoran Tunai:</span>
@@ -1691,6 +1823,24 @@ export function KasirScreen({
                     {setoranHariIniBreakdown.subtotalNonTunaiPnp} org penumpang
                   </span>
                 </div>
+                <div className="bg-amber-950/60 border border-amber-800/60 rounded-xl p-2.5">
+                  <span className="block text-amber-300 font-bold mb-0.5">Setoran Manual:</span>
+                  <b className="block text-sm sm:text-base font-extrabold text-white font-mono-num">
+                    {formatRupiah(setoranHariIniBreakdown.subtotalManualRp)}
+                  </b>
+                  <span className="text-[11px] text-amber-200 font-medium">
+                    {setoranHariIniBreakdown.subtotalManualPnp} org penumpang
+                  </span>
+                </div>
+                <div className="bg-violet-950/60 border border-violet-800/60 rounded-xl p-2.5">
+                  <span className="block text-violet-300 font-bold mb-0.5">Pnp PPT (tidak masuk setoran):</span>
+                  <b className="block text-sm sm:text-base font-extrabold text-white font-mono-num">
+                    {setoranHariIniBreakdown.subtotalPptPnp} org
+                  </b>
+                  <span className="text-[11px] text-violet-200 font-medium">
+                    {formatRupiah(0)}
+                  </span>
+                </div>
               </div>
 
 
@@ -1704,6 +1854,8 @@ export function KasirScreen({
                       <th className="py-2 px-2 text-right">Pnp</th>
                       <th className="py-2 px-2 text-right">Tunai (Rp)</th>
                       <th className="py-2 px-2 text-right">Non-Tunai (Rp)</th>
+                      <th className="py-2 px-2 text-right">Manual (Rp)</th>
+                      <th className="py-2 px-2 text-right">PPT (Pnp)</th>
                       <th className="py-2 px-3 text-right">Total (Rp)</th>
                     </tr>
                   </thead>
@@ -1715,6 +1867,8 @@ export function KasirScreen({
                         <td className="py-2 px-2 text-right font-mono">{r.totalPnp} org</td>
                         <td className="py-2 px-2 text-right font-mono text-emerald-400">{formatRupiah(r.tunaiRp)}</td>
                         <td className="py-2 px-2 text-right font-mono text-sky-400">{formatRupiah(r.nonTunaiRp)}</td>
+                        <td className="py-2 px-2 text-right font-mono text-amber-400">{formatRupiah(r.manualRp)}</td>
+                        <td className="py-2 px-2 text-right font-mono text-violet-400">{r.pptPnp} org</td>
                         <td className="py-2 px-3 text-right font-mono font-bold text-white">{formatRupiah(r.totalRp)}</td>
                       </tr>
                     ))}
@@ -1725,6 +1879,8 @@ export function KasirScreen({
                       <td className="py-2 px-2 text-right font-mono">{setoranHariIniBreakdown.totalPnp} org</td>
                       <td className="py-2 px-2 text-right font-mono text-emerald-400">{formatRupiah(setoranHariIniBreakdown.subtotalTunaiRp)}</td>
                       <td className="py-2 px-2 text-right font-mono text-sky-400">{formatRupiah(setoranHariIniBreakdown.subtotalNonTunaiRp)}</td>
+                      <td className="py-2 px-2 text-right font-mono text-amber-400">{formatRupiah(setoranHariIniBreakdown.subtotalManualRp)}</td>
+                      <td className="py-2 px-2 text-right font-mono text-violet-400">{setoranHariIniBreakdown.subtotalPptPnp} org</td>
                       <td className="py-2 px-3 text-right font-mono text-emerald-400">{formatRupiah(setoranHariIniBreakdown.totalRp)}</td>
                     </tr>
                   </tfoot>
@@ -1961,6 +2117,12 @@ export function KasirScreen({
                             <th className="py-2.5 px-3 text-center bg-sky-900/60 border-l border-sky-700/50">
                               Metode NON-TUNAI
                             </th>
+                            <th className="py-2.5 px-3 text-center bg-amber-900/60 border-l border-amber-700/50">
+                              Metode MANUAL
+                            </th>
+                            <th className="py-2.5 px-3 text-center bg-violet-900/60 border-l border-violet-700/50">
+                              PPT (Pnp)
+                            </th>
                             <th className="py-2.5 px-3 text-right bg-slate-900 border-l border-slate-700">
                               TOTAL KATEGORI
                             </th>
@@ -1973,6 +2135,12 @@ export function KasirScreen({
                             </th>
                             <th className="py-1 px-3 text-right bg-sky-50 text-sky-900 border-l border-sky-200">
                               Pnp &amp; Nominal
+                            </th>
+                            <th className="py-1 px-3 text-right bg-amber-50 text-amber-900 border-l border-amber-200">
+                              Pnp &amp; Nominal
+                            </th>
+                            <th className="py-1 px-3 text-right bg-violet-50 text-violet-900 border-l border-violet-200">
+                              Pnp
                             </th>
                             <th className="py-1 px-3 text-right bg-slate-200/70 text-slate-800 border-l border-slate-300">
                               Pnp &amp; Nominal
@@ -1999,6 +2167,16 @@ export function KasirScreen({
                                 <span className="font-bold text-slate-700">{row.nonTunaiPnp} org</span>
                                 <span className="text-slate-400 mx-1">·</span>
                                 <b className="text-sky-700">{formatRupiah(row.nonTunaiRp)}</b>
+                              </td>
+                              {/* MANUAL */}
+                              <td className="py-2 px-3 text-right bg-amber-50/40 border-l border-amber-100 font-mono-num">
+                                <span className="font-bold text-slate-700">{row.manualPnp} org</span>
+                                <span className="text-slate-400 mx-1">·</span>
+                                <b className="text-amber-700">{formatRupiah(row.manualRp)}</b>
+                              </td>
+                              {/* PPT */}
+                              <td className="py-2 px-3 text-right bg-violet-50/40 border-l border-violet-100 font-mono-num">
+                                <span className="font-bold text-slate-700">{row.pptPnp} org</span>
                               </td>
                               {/* TOTAL KATEGORI */}
                               <td className="py-2 px-3 text-right bg-slate-50 border-l border-slate-200 font-mono-num font-bold">
@@ -2033,6 +2211,22 @@ export function KasirScreen({
                               <b className="text-sky-800 text-sm">
                                 {formatRupiah(detailBreakdown.subtotalNonTunaiRp)}
                               </b>
+                            </td>
+                            {/* SUBTOTAL MANUAL */}
+                            <td className="py-2.5 px-3 text-right bg-amber-100/70 border-l border-amber-200 font-mono-num">
+                              <span className="text-amber-950 font-bold">
+                                {detailBreakdown.subtotalManualPnp} org
+                              </span>
+                              <span className="text-amber-500 mx-1">·</span>
+                              <b className="text-amber-800 text-sm">
+                                {formatRupiah(detailBreakdown.subtotalManualRp)}
+                              </b>
+                            </td>
+                            {/* SUBTOTAL PPT */}
+                            <td className="py-2.5 px-3 text-right bg-violet-100/70 border-l border-violet-200 font-mono-num">
+                              <span className="text-violet-950 font-bold">
+                                {detailBreakdown.subtotalPptPnp} org
+                              </span>
                             </td>
                             {/* TOTAL AKHIR */}
                             <td className="py-2.5 px-3 text-right bg-violet-100 border-l border-violet-200 font-mono-num">
@@ -2072,6 +2266,28 @@ export function KasirScreen({
                         </b>
                         <span className="text-[10px] text-sky-700">
                           {detailBreakdown.subtotalNonTunaiPnp} penumpang
+                        </span>
+                      </div>
+                      <div className="bg-amber-50 border border-amber-200 rounded-xl p-2.5">
+                        <span className="block text-[11px] font-bold text-amber-800">
+                          Subtotal Manual:
+                        </span>
+                        <b className="text-sm font-extrabold text-amber-900 font-mono-num block">
+                          {formatRupiah(detailBreakdown.subtotalManualRp)}
+                        </b>
+                        <span className="text-[10px] text-amber-700">
+                          {detailBreakdown.subtotalManualPnp} penumpang
+                        </span>
+                      </div>
+                      <div className="bg-violet-50 border border-violet-200 rounded-xl p-2.5">
+                        <span className="block text-[11px] font-bold text-violet-800">
+                          Total Pnp PPT (tidak masuk setoran):
+                        </span>
+                        <b className="text-sm font-extrabold text-violet-900 font-mono-num block">
+                          {detailBreakdown.subtotalPptPnp} org
+                        </b>
+                        <span className="text-[10px] text-violet-700">
+                          {formatRupiah(0)}
                         </span>
                       </div>
                       <div className="bg-violet-50 border border-violet-200 rounded-xl p-2.5">
@@ -2410,7 +2626,10 @@ export function KasirScreen({
                   </div>
                   <div className="text-xs text-slate-600">
                     Tunai: {d.subtotalTunaiPnp} org ({formatRupiah(d.setoranTunai)}) · Non-Tunai:{' '}
-                    {d.subtotalNonTunaiPnp} org ({formatRupiah(d.setoranNonTunai)})
+                    {d.subtotalNonTunaiPnp} org ({formatRupiah(d.setoranNonTunai)}) · Manual:{' '}
+                    {(d as unknown as Record<string, number | undefined>).subtotalManualPnp || 0} org (
+                    {formatRupiah((d as unknown as Record<string, number | undefined>).setoranManual || 0)}) · PPT:{' '}
+                    {(d as unknown as Record<string, number | undefined>).subtotalPptPnp || 0} org
                   </div>
                   {d.adaLostFound && (
                     <div className="text-xs font-bold text-red-700">
