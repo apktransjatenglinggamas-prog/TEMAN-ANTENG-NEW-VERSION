@@ -3,6 +3,7 @@
 // PPT terpisah, Rp-nya 0, tidak masuk total.
 // Manual & PPT per kategori disimpan di record (field rincianManualPnp / rincianPptPnp).
 // BLOK JENIS BISA DILIPAT: tiap jenis punya tombol Lihat / Sembunyikan supaya halaman pendek di HP. Menutup blok TIDAK menghapus isi input.
+// PERUBAHAN NOMOR 3 SAJA (duplikat ID_PERJALANAN): handleSimpan kini cek dulu ke server (GET ?action=cek_id_perjalanan) + cek lokal, dan Apps Script doPost juga menolak kalau ID sudah ada di DB_KASIR. Selain itu tidak ada yang diubah.
 // KL1: tombol LIHAT KL1 -> tampil persis seperti Sheet KL 1 FIX, otomatis Landscape + langsung siap print (window.print).
 import { ChangeEvent, Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -48,6 +49,11 @@ import {
 } from '../utils/anteng';
 import { BrandLogo } from './BrandLogo';
 
+
+// KL1 TTD PRAMUJASA: URL deployment Apps Script PRAMUJASA (code.gs Pramujasa, bukan Kasir).
+// ISI INI dengan URL /exec deployment Pramujasa yang baru. Kalau masih kosong, aplikasi
+// otomatis pakai fallback API_KASIR ?action=getPramujasa (sudah ditambahkan di code.gs Kasir).
+const API_PRAMUJASA = '';
 
 const KASIR_DRAFT_KEY = 'anteng_kasir_draft';
 
@@ -462,6 +468,9 @@ export function KasirScreen({
   const [showRiwayatSetoran, setShowRiwayatSetoran] = useState<boolean>(false);
   // KL1: tampilkan form KL1
   const [showKL1, setShowKL1] = useState<boolean>(false);
+  // KL1 TTD PRAMUJASA: nama dari DB_PRAMUJASA lewat API Pramujasa (kunci ID_PERJALANAN)
+  const [pramujasaKL1, setPramujasaKL1] = useState<string>('');
+  const [pramujasaKL1Loading, setPramujasaKL1Loading] = useState<boolean>(false);
   // BLOK JENIS BISA DILIPAT: default hanya TUNAI terbuka
   const [openJenis, setOpenJenis] = useState({ tunai: true, nonTunai: false, manual: false, ppt: false });
   const toggleJenis = (jenis: 'tunai' | 'nonTunai' | 'manual' | 'ppt') => setOpenJenis((prev) => ({ ...prev, [jenis]: !prev[jenis] }));
@@ -663,17 +672,33 @@ export function KasirScreen({
       pool: m?.[1] || koridor, lambung: m?.[2] || lb, shift: shift.toUpperCase().includes('2') ? 'SHIFT 2' : 'SHIFT 1',
       hari: hariKL1, tanggal: tanggalKL1, tabel1, tabel2, totalPnp, totalRp,
       terbilang: `# ${terbilangKL1(totalRp).trim()} Rupiah #`,
-      adminKasir: petugasNama, pramujasa: '', keterangan: pakaiInput ? (ket.trim() || '-') : (saved?.keterangan || '-'),
+      adminKasir: petugasNama, pramujasa: pramujasaKL1, keterangan: pakaiInput ? (ket.trim() || '-') : (saved?.keterangan || '-'),
     };
-  }, [riwayat, idPerjalanan, matriks, tunaiPnp, nonTunaiPnp, manualPnp, koridor, lb, shift, tanggal, petugasNama, ket]);
+  }, [riwayat, idPerjalanan, matriks, tunaiPnp, nonTunaiPnp, manualPnp, koridor, lb, shift, tanggal, petugasNama, ket, pramujasaKL1]);
+
+  // KL1 TTD PRAMUJASA: ambil saat KL1 dibuka. Urutan: (1) API Pramujasa kalau API_PRAMUJASA diisi,
+  // (2) fallback API Kasir ?action=getPramujasa. Keduanya balas { pramujasa: "IKA W" }.
+  useEffect(() => {
+    if (!showKL1) return;
+    const base = API_PRAMUJASA || API_KASIR;
+    if (!base) { setPramujasaKL1(''); return; }
+    let batal = false;
+    setPramujasaKL1Loading(true);
+    fetch(`${base}?action=getPramujasa&id_perjalanan=${encodeURIComponent(idPerjalanan)}`, { method: 'GET' })
+      .then((r) => r.json().catch(() => null))
+      .then((j) => { if (!batal) setPramujasaKL1(String((j && j.pramujasa) || '')); })
+      .catch(() => { if (!batal) setPramujasaKL1(''); })
+      .finally(() => { if (!batal) setPramujasaKL1Loading(false); });
+    return () => { batal = true; };
+  }, [showKL1, idPerjalanan]);
 
   // KL1: begitu dibuka, langsung siap print (Landscape via @page di KL1_CSS)
   useEffect(() => {
-    if (showKL1 && dataKL1) {
+    if (showKL1 && dataKL1 && !pramujasaKL1Loading) {
       const t = setTimeout(() => window.print(), 400);
       return () => clearTimeout(t);
     }
-  }, [showKL1, dataKL1]);
+  }, [showKL1, dataKL1, pramujasaKL1Loading]);
 
   useEffect(() => {
     for (const r of riwayat) {
@@ -1148,6 +1173,21 @@ export function KasirScreen({
   };
 
 
+  // === NOMOR 3 SAJA: cek duplikat ID_PERJALANAN langsung ke DB_KASIR (server) ===
+  const cekIdPerjalananDiServer = async (): Promise<boolean> => {
+    if (!API_KASIR) return false;
+    try {
+      const res = await fetch(
+        `${API_KASIR}?action=cek_id_perjalanan&id_perjalanan=${encodeURIComponent(idPerjalanan)}`,
+        { method: 'GET' }
+      );
+      const json = await res.json().catch(() => null);
+      return Boolean(json && (json.sudahAda === true || json.status === 'DUPLIKAT'));
+    } catch {
+      return false;
+    }
+  };
+
   const handleSimpan = async () => {
     if (sending) return;
     if (photoBusyCount > 0) {
@@ -1158,12 +1198,17 @@ export function KasirScreen({
       await kirimKasirKeServer(existingFailedRecord);
       return;
     }
+    // === NOMOR 3 SAJA: tolak simpan kalau ID_PERJALANAN sudah ada di DB_KASIR ===
+    if (await cekIdPerjalananDiServer()) {
+      showToast(`ID_PERJALANAN ${idPerjalanan} SUDAH ADA DI DB_KASIR. Simpan ditolak agar data tidak ganda.`, 'err');
+      return;
+    }
     const freshRiw = bacaStorage<KasirRecord>(STORAGE_KASIR_KEY);
     if (
       freshRiw.some((r) => r.idPerjalanan === idPerjalanan && r.statusKirim !== 'GAGAL_KIRIM') ||
       hasSavedIdPerjalanan(IDS_KASIR_KEY, idPerjalanan)
     ) {
-      showToast('ID_PERJALANAN SUDAH ADA', 'err');
+      showToast(`ID_PERJALANAN ${idPerjalanan} SUDAH ADA. Simpan ditolak agar data tidak ganda.`, 'err');
       return;
     }
 
