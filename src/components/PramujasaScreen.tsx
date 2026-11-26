@@ -1,6 +1,8 @@
 // PramujasaScreen.tsx — 4 JENIS (Tunai, Non-Tunai, Manual, PPT) + LMB 4 kolom.
 // Total Naik = Tunai + Non-Tunai + Manual. PPT terpisah, tidak masuk Total Naik.
 // Manual & PPT per kategori disimpan di record (field manual/ppt).
+// BLOK JENIS BISA DILIPAT: tiap jenis punya tombol Lihat / Sembunyikan
+// supaya halaman pendek di HP. Menutup blok TIDAK menghapus isi input.
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, PackageSearch, Trash2 } from 'lucide-react';
 import {
@@ -100,6 +102,17 @@ export function PramujasaScreen({
   const [showRiwayat, setShowRiwayat] = useState(false);
   const [lastWaMsg, setLastWaMsg] = useState('');
   const [sending, setSending] = useState(false);
+
+  // === BARU: lipat/buka tiap blok jenis (biar halaman pendek di HP) ===
+  // Default: hanya TUNAI terbuka, 3 lainnya tertutup.
+  const [openJenis, setOpenJenis] = useState({
+    tunai: true,
+    nonTunai: false,
+    manual: false,
+    ppt: false,
+  });
+  const toggleJenis = (jenis: 'tunai' | 'nonTunai' | 'manual' | 'ppt') =>
+    setOpenJenis((prev) => ({ ...prev, [jenis]: !prev[jenis] }));
 
   const idPerjalanan = useMemo(
     () => `${koridor}-${lb}${rit}${tanggal.split('-').join('')}`,
@@ -748,7 +761,8 @@ export function PramujasaScreen({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Render 1 blok jenis: judul blok + 6 kategori di bawahnya (BAGIAN 1).
+  // Render 1 blok jenis: TOMBOL judul (Lihat/Sembunyikan) + 6 kategori di bawahnya.
+  // Kalau blok tertutup, hanya tombol + subtotal yang kelihatan — halaman jadi pendek.
   // PERBAIKAN LEBAR (input meluber di HP):
   // - Baris kategori pakai grid 2 kolom terkunci [label 92px | input 1fr],
   //   bukan flex + flex-1 (flex-1 tanpa min-w-0 tidak mau mengecil).
@@ -761,29 +775,45 @@ export function PramujasaScreen({
     values: KategoriCounts,
     judulClass: string,
     boxClass: string,
-    subtotal: number
+    subtotal: number,
+    terbuka: boolean,
+    onToggle: () => void
   ) => (
     <div className={`w-full min-w-0 box-border overflow-hidden border-2 rounded-xl p-2.5 ${boxClass}`}>
-      <div className={`text-sm font-extrabold mb-2 ${judulClass}`}>{judul}</div>
-      <div className="space-y-1.5">
-        {KATEGORI_LIST.map((kat) => (
-          <div key={kat.key} className="grid grid-cols-[92px_minmax(0,1fr)] items-center gap-2">
-            <label className="truncate text-xs font-extrabold text-slate-700">{kat.label}</label>
-            <input
-              type="number"
-              min={0}
-              placeholder="0"
-              value={values[kat.key] || ''}
-              onChange={(e) => updateKategoriInput(jenis, kat.key, e.target.value)}
-              className="w-full min-w-0 box-border px-2 py-2 rounded-xl border-2 border-slate-700 bg-white font-mono-num font-extrabold text-center text-base text-slate-900"
-            />
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-full flex justify-between items-center gap-2 cursor-pointer text-left"
+      >
+        <span className={`text-sm font-extrabold ${judulClass}`}>{judul}</span>
+        <span className="flex items-center gap-2 text-xs font-extrabold text-slate-700 shrink-0">
+          <span className="font-mono-num">{subtotal} org</span>
+          <span>{terbuka ? '▲ Sembunyikan' : '▼ Lihat'}</span>
+        </span>
+      </button>
+      {terbuka && (
+        <>
+          <div className="space-y-1.5 mt-2">
+            {KATEGORI_LIST.map((kat) => (
+              <div key={kat.key} className="grid grid-cols-[92px_minmax(0,1fr)] items-center gap-2">
+                <label className="truncate text-xs font-extrabold text-slate-700">{kat.label}</label>
+                <input
+                  type="number"
+                  min={0}
+                  placeholder="0"
+                  value={values[kat.key] || ''}
+                  onChange={(e) => updateKategoriInput(jenis, kat.key, e.target.value)}
+                  className="w-full min-w-0 box-border px-2 py-2 rounded-xl border-2 border-slate-700 bg-white font-mono-num font-extrabold text-center text-base text-slate-900"
+                />
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-      <div className="flex justify-between gap-2 pt-2 mt-2 border-t border-slate-300 text-xs font-extrabold text-slate-800">
-        <span>Subtotal {judul.replace('PNP ', '')}:</span>
-        <span className="font-mono-num">{subtotal} org</span>
-      </div>
+          <div className="flex justify-between gap-2 pt-2 mt-2 border-t border-slate-300 text-xs font-extrabold text-slate-800">
+            <span>Subtotal {judul.replace('PNP ', '')}:</span>
+            <span className="font-mono-num">{subtotal} org</span>
+          </div>
+        </>
+      )}
     </div>
   );
 
@@ -997,14 +1027,14 @@ export function PramujasaScreen({
                 INPUT PENUMPANG HALTE INI (PER JENIS)
               </h4>
               <p className="text-xs font-semibold text-slate-500 mt-0.5">
-                Isi per jenis, lanjut ke bawah per kategori
+                Ketuk jenis untuk membuka / menutup isinya
               </p>
             </div>
 
-            {renderBlokJenis('tunai', 'PNP TUNAI', tunaiInputs, 'text-emerald-800', 'border-emerald-300 bg-emerald-50', subtotalHalte.subTunai)}
-            {renderBlokJenis('nonTunai', 'PNP NON-TUNAI', nonTunaiInputs, 'text-violet-800', 'border-violet-300 bg-violet-50', subtotalHalte.subNonTunai)}
-            {renderBlokJenis('manual', 'PNP MANUAL', manualInputs, 'text-amber-800', 'border-amber-300 bg-amber-50', subtotalHalte.subManual)}
-            {renderBlokJenis('ppt', 'PNP PPT', pptInputs, 'text-sky-800', 'border-sky-300 bg-sky-50', subtotalHalte.subPPT)}
+            {renderBlokJenis('tunai', 'PNP TUNAI', tunaiInputs, 'text-emerald-800', 'border-emerald-300 bg-emerald-50', subtotalHalte.subTunai, openJenis.tunai, () => toggleJenis('tunai'))}
+            {renderBlokJenis('nonTunai', 'PNP NON-TUNAI', nonTunaiInputs, 'text-violet-800', 'border-violet-300 bg-violet-50', subtotalHalte.subNonTunai, openJenis.nonTunai, () => toggleJenis('nonTunai'))}
+            {renderBlokJenis('manual', 'PNP MANUAL', manualInputs, 'text-amber-800', 'border-amber-300 bg-amber-50', subtotalHalte.subManual, openJenis.manual, () => toggleJenis('manual'))}
+            {renderBlokJenis('ppt', 'PNP PPT', pptInputs, 'text-sky-800', 'border-sky-300 bg-sky-50', subtotalHalte.subPPT, openJenis.ppt, () => toggleJenis('ppt'))}
 
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs font-extrabold text-blue-950 space-y-1">
               <div className="flex justify-between">
