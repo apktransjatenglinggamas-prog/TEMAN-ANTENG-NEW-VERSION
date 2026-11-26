@@ -379,13 +379,26 @@ function KL1Tabel({ rows, totalPnp, totalRp }: { rows: KL1RowData[]; totalPnp: n
     </table>
   );
 }
-function KL1SheetView({ data, onClose }: { data: KL1Data; onClose: () => void }) {
+function KL1SheetView({ data, onClose, onPramujasaChange }: { data: KL1Data; onClose: () => void; onPramujasaChange?: (nama: string) => void }) {
   return (
     <div id="kl1-print-area">
       <style>{KL1_CSS}</style>
-      <div className="kl1-no-print">
+      <div className="kl1-no-print" style={{ flexDirection: 'column' }}>
+        {/* PRAMUJASA BELUM MUNCUL? Ketik manual di sini — langsung tampil di tanda tangan di bawah. Tidak ikut keprint. */}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', background: '#fff', border: '2px solid #f59e0b', borderRadius: 12, padding: 10 }}>
+          <span style={{ fontWeight: 800, fontSize: 13, whiteSpace: 'nowrap' }}>Nama Pramujasa:</span>
+          <input
+            type="text"
+            value={data.pramujasa}
+            placeholder="Contoh: IKA W — ketik di sini kalau belum muncul otomatis"
+            onChange={(e) => onPramujasaChange && onPramujasaChange(e.target.value)}
+            style={{ flex: 1, padding: '8px 10px', borderRadius: 8, border: '1px solid #cbd5e1', fontWeight: 700 }}
+          />
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
         <button type="button" onClick={onClose} className="kl1-btn-abu">← KEMBALI</button>
         <button type="button" onClick={() => { document.title = `KL1-${data.idPerjalanan || data.tanggal}`; window.print(); }} className="kl1-btn-hijau">🖨 CETAK / SIMPAN PDF (Kertas 1/2 F4)</button>
+        </div>
       </div>
       <div className="kl1-kertas">
         <div className="kl1-head-kanan">BRT.JATENG.03</div>
@@ -676,21 +689,47 @@ export function KasirScreen({
     };
   }, [riwayat, idPerjalanan, matriks, tunaiPnp, nonTunaiPnp, manualPnp, koridor, lb, shift, tanggal, petugasNama, ket, pramujasaKL1]);
 
-  // KL1 TTD PRAMUJASA: ambil saat KL1 dibuka. Urutan: (1) API Pramujasa kalau API_PRAMUJASA diisi,
-  // (2) fallback API Kasir ?action=getPramujasa. Keduanya balas { pramujasa: "IKA W" }.
+  // KL1 TTD PRAMUJASA — OTOMATIS seperti nama petugas kasir:
+  // Dijemput SEJAK ID_PERJALANAN terbentuk (bukan baru pas KL1 dibuka), jadi pas KL1
+  // dibuka namanya sudah ada. Hasilnya disimpan di HP (localStorage) per ID_PERJALANAN,
+  // jadi buka ID yang sama kedua kalinya langsung muncul tanpa jemput lagi — persis
+  // seperti petugas kasir yang sudah tersimpan di HP.
+  // Coba 2 jalur berurutan: (1) API Pramujasa, (2) API Kasir ?action=getPramujasa.
   useEffect(() => {
-    if (!showKL1) return;
-    const base = API_PRAMUJASA || API_KASIR;
-    if (!base) { setPramujasaKL1(''); return; }
+    if (!idPerjalanan) return;
     let batal = false;
+    // 1) Ambil dari simpanan HP dulu (langsung tampil)
+    try {
+      const cache = JSON.parse(localStorage.getItem('anteng_pramujasa_by_id') || '{}') as Record<string, string>;
+      if (cache[idPerjalanan]) { setPramujasaKL1(cache[idPerjalanan]); setPramujasaKL1Loading(false); return; }
+    } catch {}
+    // 2) Belum ada di HP -> jemput dari server di latar belakang
     setPramujasaKL1Loading(true);
-    fetch(`${base}?action=getPramujasa&id_perjalanan=${encodeURIComponent(idPerjalanan)}`, { method: 'GET' })
-      .then((r) => r.json().catch(() => null))
-      .then((j) => { if (!batal) setPramujasaKL1(String((j && j.pramujasa) || '')); })
-      .catch(() => { if (!batal) setPramujasaKL1(''); })
-      .finally(() => { if (!batal) setPramujasaKL1Loading(false); });
+    const ambilDari = async (base: string): Promise<string> => {
+      if (!base) return '';
+      try {
+        const r = await fetch(`${base}?action=getPramujasa&id_perjalanan=${encodeURIComponent(idPerjalanan)}`, { method: 'GET' });
+        const j = await r.json().catch(() => null);
+        return String((j && j.pramujasa) || '');
+      } catch { return ''; }
+    };
+    (async () => {
+      let nama = await ambilDari(API_PRAMUJASA);
+      if (!nama && API_KASIR && API_KASIR !== API_PRAMUJASA) nama = await ambilDari(API_KASIR);
+      if (batal) return;
+      setPramujasaKL1(nama);
+      setPramujasaKL1Loading(false);
+      // 3) Simpan ke HP kalau ketemu, untuk buka berikutnya
+      if (nama) {
+        try {
+          const cache = JSON.parse(localStorage.getItem('anteng_pramujasa_by_id') || '{}') as Record<string, string>;
+          cache[idPerjalanan] = nama;
+          localStorage.setItem('anteng_pramujasa_by_id', JSON.stringify(cache));
+        } catch {}
+      }
+    })();
     return () => { batal = true; };
-  }, [showKL1, idPerjalanan]);
+  }, [idPerjalanan]);
 
   // KL1: begitu dibuka, langsung siap print (Landscape via @page di KL1_CSS)
   // SIMPAN PDF: JANGAN auto-print. window.print() otomatis tanpa klik diblokir browser
@@ -1428,7 +1467,7 @@ export function KasirScreen({
 
   // KL1: kalau mode KL1 aktif, tampilkan hanya KL1 (persis sheet, Landscape, siap print)
   if (showKL1 && dataKL1) {
-    return <KL1SheetView data={dataKL1} onClose={() => setShowKL1(false)} />;
+    return <KL1SheetView data={dataKL1} onClose={() => setShowKL1(false)} onPramujasaChange={(nama) => { setPramujasaKL1(nama); try { const cache = JSON.parse(localStorage.getItem('anteng_pramujasa_by_id') || '{}') as Record<string, string>; if (nama.trim()) { cache[idPerjalanan] = nama.trim(); localStorage.setItem('anteng_pramujasa_by_id', JSON.stringify(cache)); } } catch {} }} />;
   }
 
   return (
@@ -1546,6 +1585,11 @@ export function KasirScreen({
                 ID_PERJALANAN SUDAH ADA ({idPerjalanan})
               </div>
             )}
+            {/* PRAMUJASA BERTUGAS — otomatis terisi dari DB_PRAMUJASA lewat ID_PERJALANAN, seperti petugas kasir */}
+            <div className="mt-2 rounded-xl border-2 border-violet-300 bg-violet-50 px-3 py-2 text-center">
+              <span className="text-xs font-extrabold text-violet-800">PRAMUJASA BERTUGAS: </span>
+              <span className="text-sm font-extrabold text-violet-950">{pramujasaKL1Loading ? 'Mengambil...' : (pramujasaKL1 || '— belum ketemu —')}</span>
+            </div>
           </div>
 
 
