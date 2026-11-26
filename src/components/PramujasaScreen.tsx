@@ -749,6 +749,12 @@ export function PramujasaScreen({
   };
 
   // Render 1 blok jenis: judul blok + 6 kategori di bawahnya (BAGIAN 1).
+  // PERBAIKAN LEBAR (input meluber di HP):
+  // - Baris kategori pakai grid 2 kolom terkunci [label 92px | input 1fr],
+  //   bukan flex + flex-1 (flex-1 tanpa min-w-0 tidak mau mengecil).
+  // - Input wajib min-w-0 + w-full + box-border supaya tidak pernah
+  //   lebih lebar dari kolomnya. Label di-truncate supaya tidak mendorong.
+  // - Kartu blok dikunci overflow-hidden + min-w-0.
   const renderBlokJenis = (
     jenis: 'tunai' | 'nonTunai' | 'manual' | 'ppt',
     judul: string,
@@ -757,24 +763,24 @@ export function PramujasaScreen({
     boxClass: string,
     subtotal: number
   ) => (
-    <div className={`border-2 rounded-xl p-2.5 ${boxClass}`}>
+    <div className={`w-full min-w-0 box-border overflow-hidden border-2 rounded-xl p-2.5 ${boxClass}`}>
       <div className={`text-sm font-extrabold mb-2 ${judulClass}`}>{judul}</div>
       <div className="space-y-1.5">
         {KATEGORI_LIST.map((kat) => (
-          <div key={kat.key} className="flex items-center gap-2">
-            <label className="w-28 shrink-0 text-xs font-extrabold text-slate-700">{kat.label}</label>
+          <div key={kat.key} className="grid grid-cols-[92px_minmax(0,1fr)] items-center gap-2">
+            <label className="truncate text-xs font-extrabold text-slate-700">{kat.label}</label>
             <input
               type="number"
               min={0}
               placeholder="0"
               value={values[kat.key] || ''}
               onChange={(e) => updateKategoriInput(jenis, kat.key, e.target.value)}
-              className="flex-1 px-2 py-2.5 rounded-xl border-2 border-slate-700 bg-white font-mono-num font-extrabold text-center text-base text-slate-900"
+              className="w-full min-w-0 box-border px-2 py-2 rounded-xl border-2 border-slate-700 bg-white font-mono-num font-extrabold text-center text-base text-slate-900"
             />
           </div>
         ))}
       </div>
-      <div className="flex justify-between pt-2 mt-2 border-t border-slate-300 text-xs font-extrabold text-slate-800">
+      <div className="flex justify-between gap-2 pt-2 mt-2 border-t border-slate-300 text-xs font-extrabold text-slate-800">
         <span>Subtotal {judul.replace('PNP ', '')}:</span>
         <span className="font-mono-num">{subtotal} org</span>
       </div>
