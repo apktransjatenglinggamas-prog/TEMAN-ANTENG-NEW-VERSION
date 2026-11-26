@@ -289,19 +289,19 @@ function terbilangKL1(n: number): string {
   return '';
 }
 export interface KL1RowData { label: string; tunaiPnp: number; tunaiRp: number; nonTunaiPnp: number; nonTunaiRp: number; manualPnp: number; manualRp: number; }
-export interface KL1Data { pool: string; lambung: string; shift: string; hari: string; tanggal: string; tabel1: KL1RowData[]; tabel2: KL1RowData[]; totalPnp: number; totalRp: number; terbilang: string; adminKasir: string; pramujasa: string; keterangan: string; }
+export interface KL1Data { idPerjalanan: string; pool: string; lambung: string; shift: string; hari: string; tanggal: string; tabel1: KL1RowData[]; tabel2: KL1RowData[]; totalPnp: number; totalRp: number; terbilang: string; adminKasir: string; pramujasa: string; keterangan: string; }
 const KL1_CSS = `
   #kl1-print-area { background:#e5e7eb; padding:16px; min-height:100vh; }
   .kl1-no-print { display:flex; gap:8px; max-width:1000px; margin:0 auto 12px; }
   .kl1-btn-abu { flex:1; padding:12px; border-radius:12px; background:#fff; font-weight:800; border:2px solid #cbd5e1; cursor:pointer; }
   .kl1-btn-hijau { flex:2; padding:12px; border-radius:12px; background:#059669; color:#fff; font-weight:800; border:none; cursor:pointer; }
-  .kl1-kertas { background:#fff; max-width:1000px; margin:0 auto; padding:24px 28px; font-family:"Times New Roman",Times,serif; color:#000; }
+  .kl1-kertas { background:#fff; max-width:780px; margin:0 auto; padding:14px 16px; font-family:"Times New Roman",Times,serif; color:#000; }
   .kl1-head-kanan { text-align:right; font-size:13px; font-weight:700; }
-  .kl1-judul { text-align:center; font-size:17px; font-weight:800; text-decoration:underline; margin:8px 0 14px; }
+  .kl1-judul { text-align:center; font-size:15px; font-weight:800; text-decoration:underline; margin:8px 0 14px; }
   .kl1-meta { font-size:14px; margin-bottom:12px; }
   .kl1-meta td:first-child { width:180px; font-weight:700; }
   .kl1-meta td { padding:1px 4px; }
-  .kl1-table { width:100%; border-collapse:collapse; font-size:12px; }
+  .kl1-table { width:100%; border-collapse:collapse; font-size:11px; }
   .kl1-th, .kl1-td { border:1.5px solid #000; padding:5px 6px; text-align:center; }
   .kl1-kiri { text-align:left; font-weight:700; width:130px; }
   .kl1-sub { font-size:11px; }
@@ -315,11 +315,11 @@ const KL1_CSS = `
   .kl1-bawah td { vertical-align:top; padding:4px; }
   .kl1-ket { width:34%; }
   .kl1-ttd { width:33%; text-align:center; font-weight:700; }
-  @page { size:A4 landscape; margin:10mm; }
+  @page { size:215mm 165mm; margin:5mm; } /* KERTAS 1/2 F4 landscape: F4 215x330 dilipat jadi 215x165 */
   @media print {
-    body * { visibility:hidden; }
-    #kl1-print-area, #kl1-print-area * { visibility:visible; }
-    #kl1-print-area { position:absolute; left:0; top:0; width:100%; background:#fff; padding:0; min-height:auto; }
+    body { background:#fff !important; margin:0; }
+    body * { visibility:visible; }
+    #kl1-print-area { position:static; width:100%; background:#fff; padding:0; min-height:auto; }
     .kl1-no-print { display:none !important; }
     .kl1-kertas { max-width:none; margin:0; padding:0; }
   }
@@ -385,7 +385,7 @@ function KL1SheetView({ data, onClose }: { data: KL1Data; onClose: () => void })
       <style>{KL1_CSS}</style>
       <div className="kl1-no-print">
         <button type="button" onClick={onClose} className="kl1-btn-abu">← KEMBALI</button>
-        <button type="button" onClick={() => window.print()} className="kl1-btn-hijau">🖨 CETAK / SIMPAN PDF</button>
+        <button type="button" onClick={() => { document.title = `KL1-${data.idPerjalanan || data.tanggal}`; window.print(); }} className="kl1-btn-hijau">🖨 CETAK / SIMPAN PDF (Kertas 1/2 F4)</button>
       </div>
       <div className="kl1-kertas">
         <div className="kl1-head-kanan">BRT.JATENG.03</div>
@@ -669,7 +669,7 @@ export function KasirScreen({
     const tanggalKL1 = tglRaw ? `${tglRaw.slice(6, 8)}-${tglRaw.slice(4, 6)}-${tglRaw.slice(0, 4)}` : tanggal;
     const hariKL1 = tglRaw ? ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'][new Date(Number(tglRaw.slice(0, 4)), Number(tglRaw.slice(4, 6)) - 1, Number(tglRaw.slice(6, 8))).getDay()] : '-';
     return {
-      pool: m?.[1] || koridor, lambung: m?.[2] || lb, shift: shift.toUpperCase().includes('2') ? 'SHIFT 2' : 'SHIFT 1',
+      idPerjalanan, pool: m?.[1] || koridor, lambung: m?.[2] || lb, shift: shift.toUpperCase().includes('2') ? 'SHIFT 2' : 'SHIFT 1',
       hari: hariKL1, tanggal: tanggalKL1, tabel1, tabel2, totalPnp, totalRp,
       terbilang: `# ${terbilangKL1(totalRp).trim()} Rupiah #`,
       adminKasir: petugasNama, pramujasa: pramujasaKL1, keterangan: pakaiInput ? (ket.trim() || '-') : (saved?.keterangan || '-'),
@@ -693,12 +693,9 @@ export function KasirScreen({
   }, [showKL1, idPerjalanan]);
 
   // KL1: begitu dibuka, langsung siap print (Landscape via @page di KL1_CSS)
-  useEffect(() => {
-    if (showKL1 && dataKL1 && !pramujasaKL1Loading) {
-      const t = setTimeout(() => window.print(), 400);
-      return () => clearTimeout(t);
-    }
-  }, [showKL1, dataKL1, pramujasaKL1Loading]);
+  // SIMPAN PDF: JANGAN auto-print. window.print() otomatis tanpa klik diblokir browser
+  // (terutama di HP), jadi dialog tidak muncul / PDF blank. Print hanya dari klik tombol
+  // CETAK / SIMPAN PDF di bawah — itu user gesture, jadi diizinkan browser.
 
   useEffect(() => {
     for (const r of riwayat) {
