@@ -1,7 +1,10 @@
-// TimerScreen — UTUH, dengan Panel Cadangan LBC01
-// Fungsi lama TIDAK diubah: input LB/RIT, Jadwal, Aktual, Penumpang, Kirim ke API_TIMER,
-// cek duplikat ID_PERJALANAN, simpan lokal. Yang ditambah HANYA panel LBC01
-// (4 state + 1 validasi + 4 field kirim + 1 panel JSX + ID otomatis GANTI).
+// TimerScreen — VERSI TERAKHIR + Panel LBC01 (PENAMBAHAN SAJA)
+// Versi terakhir di screenshot (header, tanggal, Koridor/LB/Rit/Pola,
+// ID, Jadwal/Aktual, Selisih, Pnp, Keterangan, SIMPAN, INPUT BUS BERIKUTNYA,
+// Lihat Riwayat) TIDAK DIUBAH sama sekali.
+// Yang ditambahkan HANYA 6 titik panel LBC01:
+//  (1) 4 state, (2) tampilPanelCadangan, (3) ID -GANTI-, (4) 1 validasi ID Asal,
+//  (5) 4 field kirim, (6) 1 panel JSX. Tidak ada perubahan lain.
 import { useEffect, useMemo, useState } from 'react';
 import {
   API_TIMER,
@@ -67,7 +70,7 @@ export default function TimerScreen(props: {
   const idPerjalanan = useMemo(
     () =>
       isCadangan && idPerjalananAsal.trim()
-        ? `${koridor}-LBC01${rit}${tanggal.split('-').join('')}-GANTI-${idPerjalananAsal.trim().toUpperCase()}`
+        ? `${koridor}-LBC01${rit}${tanggal.split('-').join('')}-GANTI-${idPerjalananAsal.trim()}`
         : `${koridor}-${lb}${rit}${tanggal.split('-').join('')}`,
     [koridor, lb, rit, tanggal, isCadangan, idPerjalananAsal]
   );
@@ -100,10 +103,6 @@ export default function TimerScreen(props: {
     // Validasi panel cadangan LBC01 — penambahan saja
     if (isCadangan && !idPerjalananAsal.trim()) {
       showToast('Isi dulu Bus yang diganti (ID Perjalanan Asal) untuk LBC01.', 'warn');
-      return;
-    }
-    if (isCadangan && titikGanti === 'TENGAH_JALAN' && !halteTitikGanti.trim()) {
-      showToast('Isi dulu Halte Titik Ganti untuk LBC01.', 'warn');
       return;
     }
     if (!jadwal || !aktual) {
@@ -139,9 +138,9 @@ export default function TimerScreen(props: {
       keterangan: ket.trim() || '-',
       // ===== 4 field cadangan — penambahan saja =====
       statusPerjalanan: statusPerjalananEfektif,
-      idPerjalananAsal: tampilPanelCadangan ? idPerjalananAsal.trim().toUpperCase() : '',
+      idPerjalananAsal: tampilPanelCadangan ? idPerjalananAsal.trim() : '',
       titikGanti: tampilPanelCadangan ? titikGanti : '',
-      halteTitikGanti: tampilPanelCadangan ? halteTitikGanti.trim().toUpperCase() : '',
+      halteTitikGanti: tampilPanelCadangan ? halteTitikGanti : '',
       status: 'Terkirim',
       waktuKirim: `${pad2(now.getHours())}:${pad2(now.getMinutes())}`,
       createdAt: timestampSekarang(),
