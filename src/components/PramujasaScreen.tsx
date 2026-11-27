@@ -62,23 +62,7 @@ export function PramujasaScreen({
   const [koridor, setKoridor] = useState('KOR01');
   const [lb, setLb] = useState('LB01');
   const [rit, setRit] = useState('R01');
-  // ===== PANEL CADANGAN LBC01 — PENAMBAHAN SAJA =====
-  const [statusPerjalanan, setStatusPerjalanan] = useState('NORMAL');
-  const [idPerjalananAsal, setIdPerjalananAsal] = useState('');
-  const [titikGanti, setTitikGanti] = useState('TERMINAL_AWAL');
-  const [halteTitikGanti, setHalteTitikGanti] = useState('');
-  const isCadangan = lb === 'LBC01';
-  const tampilPanelCadangan = isCadangan || statusPerjalanan === 'LANJUTAN_SETELAH_PERBAIKAN';
-  const statusPerjalananEfektif = tampilPanelCadangan ? statusPerjalanan : 'NORMAL';
   const [shift, setShift] = useState('SHIFT 1');
-  // Shift otomatis ngikut rit, biar rekap tidak 0 kalau petugas lupa ganti dropdown
-  // R01-R04 = SHIFT 1, R05-R08 = SHIFT 2
-  useEffect(() => {
-    const num = parseInt(rit.replace(/[^0-9]/g, ''), 10);
-    if (!isNaN(num)) {
-      setShift(num >= 5 ? 'SHIFT 2' : 'SHIFT 1');
-    }
-  }, [rit]);
   const [jamTiba, setJamTiba] = useState(jamSekarangHHMM());
   const [jamManual, setJamManual] = useState(false);
 
@@ -101,7 +85,6 @@ export function PramujasaScreen({
     bacaStorage<PramujasaRecord>(STORAGE_PRAM_KEY)
   );
   const [showSementara, setShowSementara] = useState(false);
-  const [showRekapShift, setShowRekapShift] = useState(false);
   const [showRiwayat, setShowRiwayat] = useState(false);
   const [lastWaMsg, setLastWaMsg] = useState('');
   const [sending, setSending] = useState(false);
@@ -217,48 +200,6 @@ export function PramujasaScreen({
     [riwayat, tanggal, lb, rit, idPerjalanan]
   );
 
-  // REKAP 1 SHIFT: total gabungan semua rit dalam 1 shift
-  // Bisa dilihat walau baru jalan 1, 2, atau 3 rit - totalnya nambah live
-  // Shift 1 = R01-R04, Shift 2 = R05-R08
-  // UPGRADE dari file _2: ditambah totalTransit & totalPPT + perRit transit/ppt
-  const rekapShift = useMemo(() => {
-    const ritShift1 = ['R01', 'R02', 'R03', 'R04'];
-    const ritShift2 = ['R05', 'R06', 'R07', 'R08'];
-    const ritDiShiftIni = shift === 'SHIFT 2' ? ritShift2 : ritShift1;
-
-    const list = riwayat.filter((d) => {
-      if (!d) return false;
-      if (d.tanggal && d.tanggal !== tanggal) return false;
-      if (d.koridor && d.koridor !== koridor) return false;
-      if (d.noLambung && d.noLambung !== lb) return false;
-      if (!ritDiShiftIni.includes(d.rit)) return false;
-      // Jangan filter kaku pakai d.shift, karena rit sudah menentukan shift
-      // R01-R04 pasti Shift 1, R05-R08 pasti Shift 2
-      return true;
-    });
-
-    const perRitMap = new Map();
-    let totalNaik = 0, totalTunai = 0, totalNonTunai = 0, totalTurun = 0, totalTransit = 0, totalPPT = 0;
-
-    for (const d of list) {
-      const norm = normalizePramRecord(d);
-      const naik = norm.totalHalte || 0;
-      totalNaik += naik;
-      totalTunai += norm.totalTunai || 0;
-      totalNonTunai += norm.totalNonTunai || 0;
-      totalTurun += d.penumpangTurun || 0;
-      totalTransit += d.penumpangTransit || 0;
-      totalPPT += d.penumpangPPT || 0;
-      const key = d.idPerjalanan || d.rit;
-      const cur = perRitMap.get(key) || { rit: d.rit, idPerjalanan: d.idPerjalanan, naik: 0, tunai: 0, nonTunai: 0, turun: 0, transit: 0, ppt: 0, halte: 0 };
-      cur.naik += naik; cur.tunai += norm.totalTunai || 0; cur.nonTunai += norm.totalNonTunai || 0;
-      cur.turun += d.penumpangTurun || 0; cur.transit += d.penumpangTransit || 0; cur.ppt += d.penumpangPPT || 0; cur.halte += 1;
-      perRitMap.set(key, cur);
-    }
-    const perRit = Array.from(perRitMap.values()).sort((a, b) => a.rit.localeCompare(b.rit));
-    return { list, perRit, jumlahRitJalan: perRit.length, totalNaik, totalTunai, totalNonTunai, totalTurun, totalTransit, totalPPT };
-  }, [riwayat, tanggal, koridor, lb, shift]);
-
   // Transaksi sementara per halte (SEMENTARA / GAGAL_KIRIM) untuk rit aktif / hari ini
   const transaksiSementaraPerHalte = useMemo(
     () =>
@@ -317,11 +258,6 @@ export function PramujasaScreen({
   };
 
   const handleSimpanSementara = () => {
-    // Validasi panel cadangan LBC01 — penambahan saja
-    if (isCadangan && !idPerjalananAsal.trim()) {
-      showToast('Isi dulu Bus yang diganti (ID Perjalanan Asal) untuk LBC01.', 'warn');
-      return;
-    }
     const freshRiw = bacaStorage<PramujasaRecord>(STORAGE_PRAM_KEY);
     if (
       freshRiw.some((r) => r.idPerjalanan === idPerjalanan && r.status === 'TERVALIDASI') ||
@@ -365,10 +301,6 @@ export function PramujasaScreen({
       penumpangTransit: transitNum,
       penumpangPPT: pptNum,
       keterangan: ket.trim() || '-',
-      statusPerjalanan: statusPerjalananEfektif,
-      idPerjalananAsal: tampilPanelCadangan ? idPerjalananAsal.trim() : '',
-      titikGanti: tampilPanelCadangan ? titikGanti : '',
-      halteTitikGanti: tampilPanelCadangan ? halteTitikGanti : '',
       petugas: petugasNama,
       idPramudi: selectedPramudi?.id || '',
       namaPramudi: selectedPramudi?.nama || '',
@@ -576,40 +508,7 @@ export function PramujasaScreen({
     for (const rk of riwKasir) {
       if (
         rk?.adaLostFound &&
-        rk.lostFoundData?.          {/* ===== PANEL CADANGAN LBC01 — muncul otomatis kalau LB = LBC01 ===== */}
-          {tampilPanelCadangan && (
-            <div className="rounded-2xl border-2 border-amber-400 bg-amber-50 p-3.5 space-y-2.5">
-              <p className="font-extrabold text-amber-900">🚌 ARMADA CADANGAN AKTIF — {lb}</p>
-              <p className="text-xs text-amber-800">Bus ini menggantikan bus reguler. Lengkapi keterangan pengganti di bawah.</p>
-              <div>
-                <label className="block text-xs font-extrabold text-slate-700 mb-1">Status Perjalanan</label>
-                <select value={statusPerjalanan} onChange={(e) => setStatusPerjalanan(e.target.value)} className="w-full px-2 py-3 rounded-xl border-2 border-slate-800 font-bold text-center bg-white">
-                  <option value="PENGGANTI">PENGGANTI</option>
-                  <option value="LANJUTAN_SETELAH_PERBAIKAN">LANJUTAN_SETELAH_PERBAIKAN</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-extrabold text-slate-700 mb-1">Menggantikan Bus (ID Perjalanan Asal)</label>
-                <input type="text" placeholder="Contoh: KOR01-LB05R0320261127" value={idPerjalananAsal} onChange={(e) => setIdPerjalananAsal(e.target.value)} className="w-full px-3 py-3 rounded-xl border-2 border-slate-800 bg-white font-mono-num font-bold text-center" />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-xs font-extrabold text-slate-700 mb-1">Titik Ganti</label>
-                  <select value={titikGanti} onChange={(e) => setTitikGanti(e.target.value)} className="w-full px-2 py-3 rounded-xl border-2 border-slate-800 font-bold text-center bg-white">
-                    <option value="TERMINAL_AWAL">TERMINAL_AWAL</option>
-                    <option value="TENGAH_JALAN">TENGAH_JALAN</option>
-                    <option value="AKHIR_RIT">AKHIR_RIT</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-extrabold text-slate-700 mb-1">Halte Titik Ganti</label>
-                  <input type="text" placeholder="Nama halte (jika tengah jalan)" value={halteTitikGanti} onChange={(e) => setHalteTitikGanti(e.target.value)} className="w-full px-3 py-3 rounded-xl border-2 border-slate-800 bg-white font-bold text-center" />
-                </div>
-              </div>
-            </div>
-          )}
-
-ID_PERJALANAN === idPerjalanan &&
+        rk.lostFoundData?.ID_PERJALANAN === idPerjalanan &&
         rk.lostFoundData.NMA_BARANG
       ) {
         barangList.push(rk.lostFoundData.NMA_BARANG);
@@ -1185,64 +1084,6 @@ ID_PERJALANAN === idPerjalanan &&
                 ? 'ID_PERJALANAN SUDAH ADA'
                 : `VALIDASI & KIRIM (${unsentCountRit} Draft${subtotalHalte.total > 0 || Number(turunHalte) > 0 || Number(transitHalte) > 0 || Number(pptHalte) > 0 ? ' + Halte Ini' : ''})`}
             </button>
-
-            {/* LIHAT TRANSAKSI PER SHIFT - di antara VALIDASI & KIRIM dan BARANG TERTINGGAL */}
-            <button
-              type="button"
-              onClick={() => setShowRekapShift((v) => !v)}
-              className="w-full py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-base flex items-center justify-center gap-2 cursor-pointer"
-            >
-              {showRekapShift ? '▲ Sembunyikan Transaksi Per Shift' : '👁️ Lihat Transaksi Per Shift'}
-            </button>
-
-            {showRekapShift && (
-              <div className="bg-indigo-50 border-2 border-indigo-300 rounded-2xl p-4 space-y-3">
-                <div className="text-center font-extrabold text-indigo-950 text-sm">
-                  REKAP {shift} - {lb} ({koridor}) - {tanggal}
-                </div>
-                <div className="text-center text-xs font-bold text-indigo-900">
-                  Rit sudah jalan: {rekapShift.jumlahRitJalan} rit
-                  {rekapShift.perRit.length > 0 ? ` (${rekapShift.perRit.map((r) => r.rit).join(', ')})` : ' - belum ada rit tersimpan'}
-                </div>
-                <div className="grid grid-cols-2 gap-2 text-center">
-                  <div className="bg-white border border-indigo-200 rounded-xl p-2.5">
-                    <div className="text-[11px] font-bold text-slate-500">TOTAL NAIK</div>
-                    <div className="font-mono-num font-extrabold text-lg">{rekapShift.totalNaik} org</div>
-                    <div className="text-[11px] font-bold text-slate-600">Tunai {rekapShift.totalTunai} · Non-Tunai {rekapShift.totalNonTunai}</div>
-                  </div>
-                  <div className="bg-white border border-indigo-200 rounded-xl p-2.5">
-                    <div className="text-[11px] font-bold text-slate-500">TOTAL TURUN</div>
-                    <div className="font-mono-num font-extrabold text-lg">{rekapShift.totalTurun} org</div>
-                    <div className="text-[11px] font-bold text-slate-600">{rekapShift.list.length} halte tercatat</div>
-                  </div>
-                  <div className="bg-white border border-indigo-200 rounded-xl p-2.5">
-                    <div className="text-[11px] font-bold text-slate-500">TOTAL TRANSIT</div>
-                    <div className="font-mono-num font-extrabold text-lg">{rekapShift.totalTransit} org</div>
-                    <div className="text-[11px] font-bold text-slate-600">{rekapShift.list.length} halte tercatat</div>
-                  </div>
-                  <div className="bg-white border border-indigo-200 rounded-xl p-2.5">
-                    <div className="text-[11px] font-bold text-slate-500">TOTAL PPT</div>
-                    <div className="font-mono-num font-extrabold text-lg">{rekapShift.totalPPT} org</div>
-                    <div className="text-[11px] font-bold text-slate-600">{rekapShift.list.length} halte tercatat</div>
-                  </div>
-                </div>
-                {rekapShift.perRit.length === 0 ? (
-                  <p className="text-center text-sm text-indigo-800/80 py-2 font-medium">
-                    Belum ada data tersimpan di shift ini. Rekap akan muncul otomatis setelah rit pertama disimpan.
-                  </p>
-                ) : (
-                  <div className="space-y-1.5">
-                    <div className="text-xs font-extrabold text-indigo-900">Rincian Per Rit:</div>
-                    {rekapShift.perRit.map((r) => (
-                      <div key={r.idPerjalanan || r.rit} className="bg-white border border-indigo-200 rounded-lg px-3 py-2 flex justify-between items-center text-xs font-bold">
-                        <span>{r.rit} <span className="text-slate-500 font-medium">({r.halte} halte)</span></span>
-                        <span className="font-mono-num">Naik {r.naik} · Turun {r.turun} · Transit {r.transit} · PPT {r.ppt}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
 
             {lastWaMsg && (
               <>
