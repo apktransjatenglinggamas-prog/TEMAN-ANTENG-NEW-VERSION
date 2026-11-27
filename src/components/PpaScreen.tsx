@@ -293,12 +293,6 @@ export function PpaScreen({
     `Status: ${pl.status}`;
 
   const kirimKeServer = async (pl: PpaRecord) => {
-    // Penjaga ke-2 (untuk tombol KIRIM ULANG di riwayat): kalau Timer untuk
-    // ID ini sekarang tidak ada, jangan kirim ulang.
-    if (loadingTimer || !timerData || timerErr) {
-      showToast('DITOLAK: DATA TIMER BELUM ADA untuk ID ini. Minta Timer kirim dulu.', 'err');
-      return;
-    }
     setSending(true);
     setGlobalLoading(true);
     try {
@@ -348,22 +342,8 @@ export function PpaScreen({
     }
   };
 
-  // KUNCI TIMER: PPA TIDAK BOLEH simpan kalau Timer belum ada.
-  // Ini cek di HP (frontend). Server PPA juga menolak (lihat code_PPA_TOLAK_TANPA_TIMER.txt).
-  const timerBelumAda = !timerData || timerErr;
   const handleSimpan = async () => {
     if (sending) return;
-    // 1) Timer masih loading -> jangan simpan dulu, tunggu hasil cek Timer.
-    if (loadingTimer) {
-      showToast('Tunggu... masih cek Data Timer untuk ID ini.', 'warn');
-      return;
-    }
-    // 2) Timer TIDAK ADA / GAGAL dibaca -> TOLAK SIMPAN. Data tidak masuk
-    // lokal maupun server, supaya salah pencet LB/RIT tidak jadi data sampah.
-    if (timerBelumAda) {
-      showToast('DITOLAK: DATA TIMER BELUM ADA untuk ID ini. Minta Timer kirim dulu.', 'err');
-      return;
-    }
     // Duplikat: ID + POS + ARAH. Cek riwayat lokal (kunci lengkap).
     const freshRiw = bacaStorage<PpaRecord>(STORAGE_PPA_KEY);
     if (
@@ -701,22 +681,18 @@ export function PpaScreen({
           <div className="space-y-2.5 pt-2">
             <button
               type="button"
-              disabled={sending || loadingTimer || timerBelumAda}
+              disabled={sending}
               onClick={() => void handleSimpan()}
               className={`w-full py-4 rounded-2xl font-extrabold text-lg text-white cursor-pointer disabled:cursor-not-allowed ${
                 existingValidRecord
                   ? 'bg-red-700 hover:bg-red-800'
-                  : timerBelumAda || jamInvalid || !arahKetemu
+                  : jamInvalid || !arahKetemu
                   ? 'bg-red-400'
                   : 'bg-[#004080] hover:bg-blue-950'
               }`}
             >
               {sending
                 ? 'MENGIRIM VALIDASI...'
-                : loadingTimer
-                ? 'CEK DATA TIMER...'
-                : timerBelumAda
-                ? 'DATA TIMER BELUM ADA — TIDAK BISA SIMPAN'
                 : existingValidRecord
                 ? 'ID + POS + ARAH SUDAH ADA'
                 : existingFailedRecord
