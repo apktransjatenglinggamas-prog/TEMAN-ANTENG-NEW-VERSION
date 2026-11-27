@@ -437,6 +437,203 @@ function KL1SheetView({ data, onClose, onPramujasaChange }: { data: KL1Data; onC
   );
 }
 
+
+// ===== KL2: REKAP 1 HARI / 1 SHIFT / 1 SHELTER (persis file Excel KL2) =====
+// File Excel KL2 punya 2 sheet: PBG (Purbalingga) dan PWT (Purwokerto).
+// Tiap sheet = 2 tabel x 10 baris NOMOR LAMBUNG / NAMA HALTE.
+// Tabel 1: UMUM + PELAJAR. Tabel 2: BURUH + VETERAN.
+// Per kategori, yang DIISI hanya 5 angka: QRIS, TAPPING, SI ANTENG, MANUAL, E-TICKETING.
+// Yang lain HITUNG OTOMATIS:
+//   TIKET NON TUNAI = QRIS + TAPPING + SI ANTENG
+//   TIKET TUNAI = MANUAL + E-TICKETING
+//   RUPIAH NON TUNAI = TIKET NON TUNAI x tarif kategori (UMUM 5000, sisanya 1000)
+//   RUPIAH TUNAI = TIKET TUNAI x tarif kategori
+//   JUMLAH TOTAL = RUPIAH NON TUNAI + RUPIAH TUNAI
+// Kolom TOTAL AKHIR (tabel 1) / TOTAL (tabel 2): per baris = gabungan 2 kategori di tabel itu.
+//   TIKET NON TUNAI / TIKET TUNAI / TR / RUPIAH NON TUNAI / RUPIAH TUNAI / JUMLAH TOTAL.
+//   TR di file Excel tidak dijelaskan — di sini TR = total tiket (Non Tunai + Tunai).
+// CATATAN PENTING: file Excel KL2 TIDAK punya kolom LANSIA & DISABILITAS.
+//   Jadi LANSIA & DISABILITAS tidak masuk KL2 (ikut file aslinya). Kalau ternyata
+//   harus ada, bilang saja — nanti ditambah jadi tabel ke-3.
+export interface KL2KatInput { qris: number; tap: number; siAnteng: number; manual: number; eTick: number; }
+export interface KL2Row { lambung: string; umum: KL2KatInput; pelajar: KL2KatInput; buruh: KL2KatInput; veteran: KL2KatInput; }
+export type KL2Shelter = 'PBG' | 'PWT';
+export interface KL2Data { hari: string; tanggal: string; shift: string; shelter: KL2Shelter; adminKasir: string; rows: KL2Row[]; }
+export const KL2_TARIF: Record<'umum' | 'pelajar' | 'buruh' | 'veteran', number> = { umum: 5000, pelajar: 1000, buruh: 1000, veteran: 1000 };
+export function kl2EmptyKat(): KL2KatInput { return { qris: 0, tap: 0, siAnteng: 0, manual: 0, eTick: 0 }; }
+export function kl2EmptyRow(): KL2Row { return { lambung: '', umum: kl2EmptyKat(), pelajar: kl2EmptyKat(), buruh: kl2EmptyKat(), veteran: kl2EmptyKat() }; }
+export function kl2KatHitung(kat: KL2KatInput, tarif: number) {
+  const nonTunai = (kat.qris || 0) + (kat.tap || 0) + (kat.siAnteng || 0);
+  const tunai = (kat.manual || 0) + (kat.eTick || 0);
+  const rpNon = nonTunai * tarif;
+  const rpTunai = tunai * tarif;
+  return { nonTunai, tunai, rpNon, rpTunai, jumlah: rpNon + rpTunai, totalTiket: nonTunai + tunai };
+}
+const KL2_CSS = `
+  #kl2-print-area { background:#e5e7eb; padding:12px; min-height:100vh; }
+  .kl2-no-print { display:flex; gap:8px; max-width:1100px; margin:0 auto 12px; flex-wrap:wrap; }
+  .kl2-btn-abu { flex:1; padding:12px; border-radius:12px; background:#fff; font-weight:800; border:2px solid #cbd5e1; cursor:pointer; min-width:120px; }
+  .kl2-btn-hijau { flex:2; padding:12px; border-radius:12px; background:#059669; color:#fff; font-weight:800; border:none; cursor:pointer; min-width:180px; }
+  .kl2-btn-biru { flex:1; padding:12px; border-radius:12px; background:#0369a1; color:#fff; font-weight:800; border:none; cursor:pointer; min-width:180px; }
+  .kl2-kertas { background:#fff; max-width:1100px; margin:0 auto; padding:12px; font-family:"Times New Roman",Times,serif; color:#000; }
+  .kl2-head-kanan { text-align:right; font-size:12px; font-weight:700; }
+  .kl2-judul { text-align:center; font-size:14px; font-weight:800; text-decoration:underline; margin:6px 0 2px; }
+  .kl2-subjudul { text-align:center; font-size:15px; font-weight:800; margin:0 0 10px; }
+  .kl2-meta { font-size:13px; margin-bottom:10px; width:100%; }
+  .kl2-meta td { padding:1px 4px; }
+  .kl2-table { width:100%; border-collapse:collapse; font-size:9px; margin-bottom:10px; }
+  .kl2-th, .kl2-td { border:1.5px solid #000; padding:2px 1px; text-align:center; }
+  .kl2-kiri { text-align:left; font-weight:700; }
+  .kl2-total-head { background:#f1f5f9; }
+  .kl2-bold { font-weight:700; }
+  .kl2-input { width:100%; border:none; background:transparent; text-align:center; font-family:inherit; font-size:10px; font-weight:700; padding:2px 0; }
+  .kl2-input-lambung { width:100%; border:none; background:transparent; font-family:inherit; font-size:10px; font-weight:700; padding:2px; }
+  .kl2-bawah { width:100%; margin-top:10px; font-size:12px; }
+  .kl2-bawah td { vertical-align:top; padding:4px; }
+  .kl2-ttd { width:33%; text-align:center; font-weight:700; }
+  .kl2-catatan { font-size:11px; color:#334155; margin:6px 0 0; }
+  @page { size:297mm 210mm landscape; margin:5mm; }
+  @media print {
+    body { background:#fff !important; margin:0; }
+    #kl2-print-area { position:static; width:100%; background:#fff; padding:0; min-height:auto; }
+    .kl2-no-print { display:none !important; }
+    .kl2-kertas { max-width:none; margin:0; padding:0; }
+    .kl2-input, .kl2-input-lambung { border:none !important; }
+  }
+`;
+function KL2Tabel({ rows, katKiri, katKanan, onRowChange }: { rows: KL2Row[]; katKiri: 'umum' | 'buruh'; katKanan: 'pelajar' | 'veteran'; onRowChange: (idx: number, kat: 'umum' | 'pelajar' | 'buruh' | 'veteran' | 'lambung', field: string, val: string) => void }) {
+  const labelKiri = katKiri === 'umum' ? 'UMUM' : 'BURUH';
+  const labelKanan = katKanan === 'pelajar' ? 'PELAJAR' : 'VETERAN';
+  const tarifKiri = KL2_TARIF[katKiri];
+  const tarifKanan = KL2_TARIF[katKanan];
+  const renderKatCells = (row: KL2Row, idx: number, kat: 'umum' | 'pelajar' | 'buruh' | 'veteran', tarif: number) => {
+    const v = row[kat];
+    const h = kl2KatHitung(v, tarif);
+    const fields: Array<[keyof KL2KatInput, string]> = [['qris', 'QRIS'], ['tap', 'TAPPING'], ['siAnteng', 'SI ANTENG'], ['manual', 'MANUAL'], ['eTick', 'E-TICKETING']];
+    return (
+      <Fragment key={kat}>
+        {fields.map(([f]) => (
+          <td key={f} className="kl2-td"><input type="number" min={0} className="kl2-input" value={v[f] || ''} placeholder="0" onChange={(e) => onRowChange(idx, kat, f, e.target.value)} /></td>
+        ))}
+        <td className="kl2-td">{h.nonTunai || ''}</td><td className="kl2-td">{h.tunai || ''}</td><td className="kl2-td">{h.rpNon ? formatRupiah(h.rpNon) : ''}</td><td className="kl2-td">{h.rpTunai ? formatRupiah(h.rpTunai) : ''}</td><td className="kl2-td kl2-bold">{h.jumlah ? formatRupiah(h.jumlah) : ''}</td>
+      </Fragment>
+    );
+  };
+  const renderTotalCells = (row: KL2Row) => {
+    const a = kl2KatHitung(row[katKiri], tarifKiri);
+    const b = kl2KatHitung(row[katKanan], tarifKanan);
+    const nt = a.nonTunai + b.nonTunai; const t = a.tunai + b.tunai; const rpN = a.rpNon + b.rpNon; const rpT = a.rpTunai + b.rpTunai;
+    return (<Fragment><td className="kl2-td kl2-bold">{nt || ''}</td><td className="kl2-td kl2-bold">{t || ''}</td><td className="kl2-td kl2-bold">{(nt + t) || ''}</td><td className="kl2-td kl2-bold">{rpN ? formatRupiah(rpN) : ''}</td><td className="kl2-td kl2-bold">{rpT ? formatRupiah(rpT) : ''}</td><td className="kl2-td kl2-bold">{(rpN + rpT) ? formatRupiah(rpN + rpT) : ''}</td></Fragment>);
+  };
+  const sumKat = (kat: 'umum' | 'pelajar' | 'buruh' | 'veteran', tarif: number) => {
+    let nt = 0, t = 0, rpN = 0, rpT = 0;
+    rows.forEach((r) => { const h = kl2KatHitung(r[kat], tarif); nt += h.nonTunai; t += h.tunai; rpN += h.rpNon; rpT += h.rpTunai; });
+    return { nt, t, rpN, rpT, jumlah: rpN + rpT };
+  };
+  const sKiri = sumKat(katKiri, tarifKiri); const sKanan = sumKat(katKanan, tarifKanan);
+  const totalLabel = katKiri === 'umum' ? 'TOTAL AKHIR' : 'TOTAL';
+  return (
+    <table className="kl2-table">
+      <thead>
+        <tr>
+          <th rowSpan={3} className="kl2-th" style={{ width: 26 }}>NO</th>
+          <th rowSpan={3} className="kl2-th" style={{ width: 90 }}>NOMOR LAMBUNG / NAMA HALTE</th>
+          <th colSpan={10} className="kl2-th">{labelKiri}</th>
+          <th colSpan={10} className="kl2-th">{labelKanan}</th>
+          <th colSpan={6} className="kl2-th kl2-total-head">{totalLabel}</th>
+        </tr>
+        <tr>
+          <th colSpan={3} className="kl2-th">NON TUNAI</th><th colSpan={2} className="kl2-th">TUNAI</th><th colSpan={5} className="kl2-th">TOTAL</th>
+          <th colSpan={3} className="kl2-th">NON TUNAI</th><th colSpan={2} className="kl2-th">TUNAI</th><th colSpan={5} className="kl2-th">TOTAL</th>
+          <th colSpan={6} className="kl2-th kl2-total-head">TOTAL</th>
+        </tr>
+        <tr>
+          <th className="kl2-th">QRIS</th><th className="kl2-th">TAPPING</th><th className="kl2-th">SI ANTENG</th><th className="kl2-th">MANUAL</th><th className="kl2-th">E-TICKETING</th><th className="kl2-th">TIKET NON TUNAI</th><th className="kl2-th">TIKET TUNAI</th><th className="kl2-th">RUPIAH NON TUNAI</th><th className="kl2-th">RUPIAH TUNAI</th><th className="kl2-th">JUMLAH TOTAL</th>
+          <th className="kl2-th">QRIS</th><th className="kl2-th">TAPPING</th><th className="kl2-th">SI ANTENG</th><th className="kl2-th">MANUAL</th><th className="kl2-th">E-TICKETING</th><th className="kl2-th">TIKET NON TUNAI</th><th className="kl2-th">TIKET TUNAI</th><th className="kl2-th">RUPIAH NON TUNAI</th><th className="kl2-th">RUPIAH TUNAI</th><th className="kl2-th">JUMLAH TOTAL</th>
+          <th className="kl2-th kl2-total-head">TIKET NON TUNAI</th><th className="kl2-th kl2-total-head">TIKET TUNAI</th><th className="kl2-th kl2-total-head">TR</th><th className="kl2-th kl2-total-head">RUPIAH NON TUNAI</th><th className="kl2-th kl2-total-head">RUPIAH TUNAI</th><th className="kl2-th kl2-total-head">JUMLAH TOTAL</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((row, idx) => (
+          <tr key={idx}>
+            <td className="kl2-td">{idx + 1}</td>
+            <td className="kl2-td"><input type="text" className="kl2-input-lambung" value={row.lambung} placeholder="LB.." onChange={(e) => onRowChange(idx, 'lambung', 'lambung', e.target.value)} /></td>
+            {renderKatCells(row, idx, katKiri, tarifKiri)}
+            {renderKatCells(row, idx, katKanan, tarifKanan)}
+            {renderTotalCells(row)}
+          </tr>
+        ))}
+        <tr>
+          <td className="kl2-td kl2-bold" colSpan={2}>J U M L A H</td>
+          <td className="kl2-td kl2-bold">{rows.reduce((a, r) => a + (r[katKiri].qris || 0), 0) || ''}</td><td className="kl2-td kl2-bold">{rows.reduce((a, r) => a + (r[katKiri].tap || 0), 0) || ''}</td><td className="kl2-td kl2-bold">{rows.reduce((a, r) => a + (r[katKiri].siAnteng || 0), 0) || ''}</td><td className="kl2-td kl2-bold">{rows.reduce((a, r) => a + (r[katKiri].manual || 0), 0) || ''}</td><td className="kl2-td kl2-bold">{rows.reduce((a, r) => a + (r[katKiri].eTick || 0), 0) || ''}</td><td className="kl2-td kl2-bold">{sKiri.nt || ''}</td><td className="kl2-td kl2-bold">{sKiri.t || ''}</td><td className="kl2-td kl2-bold">{sKiri.rpN ? formatRupiah(sKiri.rpN) : ''}</td><td className="kl2-td kl2-bold">{sKiri.rpT ? formatRupiah(sKiri.rpT) : ''}</td><td className="kl2-td kl2-bold">{sKiri.jumlah ? formatRupiah(sKiri.jumlah) : ''}</td>
+          <td className="kl2-td kl2-bold">{rows.reduce((a, r) => a + (r[katKanan].qris || 0), 0) || ''}</td><td className="kl2-td kl2-bold">{rows.reduce((a, r) => a + (r[katKanan].tap || 0), 0) || ''}</td><td className="kl2-td kl2-bold">{rows.reduce((a, r) => a + (r[katKanan].siAnteng || 0), 0) || ''}</td><td className="kl2-td kl2-bold">{rows.reduce((a, r) => a + (r[katKanan].manual || 0), 0) || ''}</td><td className="kl2-td kl2-bold">{rows.reduce((a, r) => a + (r[katKanan].eTick || 0), 0) || ''}</td><td className="kl2-td kl2-bold">{sKanan.nt || ''}</td><td className="kl2-td kl2-bold">{sKanan.t || ''}</td><td className="kl2-td kl2-bold">{sKanan.rpN ? formatRupiah(sKanan.rpN) : ''}</td><td className="kl2-td kl2-bold">{sKanan.rpT ? formatRupiah(sKanan.rpT) : ''}</td><td className="kl2-td kl2-bold">{sKanan.jumlah ? formatRupiah(sKanan.jumlah) : ''}</td>
+          <td className="kl2-td kl2-bold">{(sKiri.nt + sKanan.nt) || ''}</td><td className="kl2-td kl2-bold">{(sKiri.t + sKanan.t) || ''}</td><td className="kl2-td kl2-bold">{(sKiri.nt + sKanan.nt + sKiri.t + sKanan.t) || ''}</td><td className="kl2-td kl2-bold">{(sKiri.rpN + sKanan.rpN) ? formatRupiah(sKiri.rpN + sKanan.rpN) : ''}</td><td className="kl2-td kl2-bold">{(sKiri.rpT + sKanan.rpT) ? formatRupiah(sKiri.rpT + sKanan.rpT) : ''}</td><td className="kl2-td kl2-bold">{(sKiri.jumlah + sKanan.jumlah) ? formatRupiah(sKiri.jumlah + sKanan.jumlah) : ''}</td>
+        </tr>
+      </tbody>
+    </table>
+  );
+}
+function KL2SheetView({ data, onClose, onRowsChange, onShelterChange, onAutoFill }: { data: KL2Data; onClose: () => void; onRowsChange: (rows: KL2Row[]) => void; onShelterChange: (s: KL2Shelter) => void; onAutoFill: () => void }) {
+  const kota = data.shelter === 'PBG' ? 'Purbalingga' : 'Purwokerto';
+  const grand = (() => {
+    let nt = 0, t = 0, rpN = 0, rpT = 0;
+    (['umum', 'pelajar', 'buruh', 'veteran'] as const).forEach((k) => {
+      data.rows.forEach((r) => { const h = kl2KatHitung(r[k], KL2_TARIF[k]); nt += h.nonTunai; t += h.tunai; rpN += h.rpNon; rpT += h.rpTunai; });
+    });
+    return { nt, t, rpN, rpT, jumlah: rpN + rpT, tiket: nt + t };
+  })();
+  const handleChange = (idx: number, kat: 'umum' | 'pelajar' | 'buruh' | 'veteran' | 'lambung', field: string, val: string) => {
+    const next = data.rows.map((r, i) => {
+      if (i !== idx) return r;
+      if (kat === 'lambung') return { ...r, lambung: val.toUpperCase() };
+      const n = Math.max(0, parseInt(val, 10) || 0);
+      return { ...r, [kat]: { ...(r[kat] as KL2KatInput), [field]: n } };
+    });
+    onRowsChange(next);
+  };
+  return (
+    <div id="kl2-print-area">
+      <style>{KL2_CSS}</style>
+      <div className="kl2-no-print">
+        <button type="button" onClick={onClose} className="kl2-btn-abu">← KEMBALI</button>
+        <button type="button" onClick={onAutoFill} className="kl2-btn-biru">↺ ISI OTOMATIS DARI RIWAYAT HARI INI</button>
+        <button type="button" onClick={() => { document.title = `KL2-${data.shelter}-${data.tanggal}-${data.shift}`; window.print(); }} className="kl2-btn-hijau">🖨 CETAK / SIMPAN PDF (KL2 Landscape)</button>
+      </div>
+      <div className="kl2-no-print" style={{ alignItems: 'center' }}>
+        <label style={{ fontWeight: 800, fontSize: 13 }}>Shelter / Sheet:</label>
+        <select value={data.shelter} onChange={(e) => onShelterChange(e.target.value as KL2Shelter)} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid #cbd5e1', fontWeight: 800 }}>
+          <option value="PBG">PBG — Purbalingga</option>
+          <option value="PWT">PWT — Purwokerto</option>
+        </select>
+        <span style={{ fontSize: 12, color: '#475569' }}>Isi hanya 5 angka per kategori (QRIS, TAPPING, SI ANTENG, MANUAL, E-TICKETING) — sisanya hitung otomatis. KL2 ini rekap 1 hari + 1 shift + 1 shelter, 10 lambung.</span>
+      </div>
+      <div className="kl2-kertas">
+        <div className="kl2-head-kanan">BRT.JATENG.08. REV</div>
+        <div className="kl2-head-kanan">FORM : KL2</div>
+        <h1 className="kl2-judul">HASIL PENJUALAN TIKET BUS BRT TRANS JATENG</h1>
+        <h2 className="kl2-subjudul">KL2</h2>
+        <table className="kl2-meta"><tbody>
+          <tr><td style={{ width: 90, fontWeight: 700 }}>Hari</td><td>: {data.hari}</td><td style={{ width: 220, fontWeight: 700 }}>Shelter</td><td>: {data.shelter}</td></tr>
+          <tr><td style={{ fontWeight: 700 }}>Tanggal</td><td>: {data.tanggal}</td><td style={{ fontWeight: 700 }}>Administrasi Kasir (Pengelola Pendapatan)</td><td>: {data.adminKasir}</td></tr>
+          <tr><td style={{ fontWeight: 700 }}>Shift</td><td>: {data.shift}</td><td></td><td></td></tr>
+        </tbody></table>
+        <KL2Tabel rows={data.rows} katKiri="umum" katKanan="pelajar" onRowChange={handleChange} />
+        <KL2Tabel rows={data.rows} katKiri="buruh" katKanan="veteran" onRowChange={handleChange} />
+        <table className="kl2-table"><tbody><tr>
+          <td className="kl2-td kl2-bold kl2-kiri" colSpan={2}>JUMLAH TOTAL</td>
+          <td className="kl2-td kl2-bold">{grand.nt || ''}</td><td className="kl2-td kl2-bold">{grand.t || ''}</td><td className="kl2-td kl2-bold">{grand.tiket || ''}</td><td className="kl2-td kl2-bold">{grand.rpN ? formatRupiah(grand.rpN) : ''}</td><td className="kl2-td kl2-bold">{grand.rpT ? formatRupiah(grand.rpT) : ''}</td><td className="kl2-td kl2-bold">{grand.jumlah ? formatRupiah(grand.jumlah) : ''}</td>
+          <td className="kl2-td" colSpan={20} style={{ textAlign: 'left' }}>Tiket Non Tunai {grand.nt || 0} + Tiket Tunai {grand.t || 0} = TR {grand.tiket || 0} · Total {grand.jumlah ? formatRupiah(grand.jumlah) : 'Rp 0'}</td>
+        </tr></tbody></table>
+        <p className="kl2-catatan">Catatan: di file Excel KL2, kategori yang ada hanya UMUM, PELAJAR, BURUH, VETERAN — LANSIA &amp; DISABILITAS tidak punya kolom, jadi tidak masuk KL2 ini. Tarif: UMUM Rp 5.000, PELAJAR / BURUH / VETERAN Rp 1.000. TR = total tiket (Non Tunai + Tunai).</p>
+        <table className="kl2-bawah"><tbody>
+          <tr><td></td><td></td><td style={{ textAlign: 'right' }}>{kota}, {data.tanggal}</td></tr>
+          <tr><td></td><td className="kl2-ttd">Mengetahui,<br />ADMINISTRASI KANTOR (PENGELOLA DATA)<br /><br /><br />_______________________</td><td className="kl2-ttd">ADMINISTRASI KASIR (PENGELOLA PENDAPATAN)<br /><br /><br />_______________________<br />{data.adminKasir}</td></tr>
+        </tbody></table>
+      </div>
+    </div>
+  );
+}
+
 interface KasirScreenProps {
   petugasNama: string;
   onBackToLogin: () => void;
@@ -493,6 +690,65 @@ export function KasirScreen({
   const [showRiwayatSetoran, setShowRiwayatSetoran] = useState<boolean>(false);
   // KL1: tampilkan form KL1
   const [showKL1, setShowKL1] = useState<boolean>(false);
+  // KL2: rekap 1 hari + 1 shift + 1 shelter (10 lambung). Disimpan di HP per tanggal+shift+shelter.
+  const [showKL2, setShowKL2] = useState<boolean>(false);
+  const [kl2Shelter, setKl2Shelter] = useState<KL2Shelter>('PBG');
+  const [kl2Rows, setKl2Rows] = useState<KL2Row[]>(() => Array.from({ length: 10 }, () => kl2EmptyRow()));
+  const kl2StorageKey = `anteng_kl2_${tanggal}_${shift}_${kl2Shelter}`;
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(kl2StorageKey);
+      if (raw) { const parsed = JSON.parse(raw) as KL2Row[]; if (Array.isArray(parsed) && parsed.length === 10) setKl2Rows(parsed); else setKl2Rows(Array.from({ length: 10 }, () => kl2EmptyRow())); }
+      else setKl2Rows(Array.from({ length: 10 }, () => kl2EmptyRow()));
+    } catch { setKl2Rows(Array.from({ length: 10 }, () => kl2EmptyRow())); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [kl2StorageKey]);
+  useEffect(() => {
+    try { localStorage.setItem(kl2StorageKey, JSON.stringify(kl2Rows)); } catch {}
+  }, [kl2Rows, kl2StorageKey]);
+  // KL2: isi otomatis dari riwayat tersimpan hari ini + shift ini (tiap record = 1 baris lambung).
+  // Kalau riwayat kosong, pakai input KL1 yang sedang diisi sebagai baris 1.
+  const handleKl2AutoFill = () => {
+    const loose = (r: unknown) => r as unknown as Record<string, Record<string, number> | undefined>;
+    const rowDariRecord = (r: unknown, lambungFallback: string): KL2Row => {
+      const L = loose(r);
+      const ambil = (kat: string): KL2KatInput => {
+        const q = Number(L.rincianQrisPnp?.[kat]) || 0;
+        const tap = Number(L.rincianTapPnp?.[kat]) || 0;
+        const sia = Number(L.rincianSiAntengPnp?.[kat]) || 0;
+        const man = Number(L.rincianManualPnp?.[kat]) || 0;
+        const e = Number(L.rincianTunaiPnp?.[kat]) || 0;
+        // Data lama tanpa rincian QRIS/TAP/SI ANTENG: total Non-Tunai dianggap QRIS (sama seperti KL1).
+        const nt = Number(L.rincianNonTunaiPnp?.[kat]) || 0;
+        return { qris: (q + tap + sia === 0 && nt > 0) ? nt : q, tap, siAnteng: sia, manual: man, eTick: e };
+      };
+      const rec = r as { lb?: string; lambung?: string; koridor?: string };
+      return { lambung: String(rec.lb || rec.lambung || lambungFallback || '').toUpperCase(), umum: ambil('umum'), pelajar: ambil('pelajar'), buruh: ambil('buruh'), veteran: ambil('veteran') };
+    };
+    const tglIso = tanggal;
+    const shiftNorm = shift.toUpperCase().includes('2') ? 'SHIFT 2' : 'SHIFT 1';
+    const cocok = (riwayat as unknown as Array<Record<string, unknown>>).filter((r) => {
+      const t = String(r.tanggal || '');
+      const idp = String(r.idPerjalanan || '');
+      const cocokTgl = t === tglIso || idp.endsWith(tglIso.split('-').join(''));
+      const s = String(r.shift || '').toUpperCase();
+      const cocokShift = !s || s.includes('2') === shiftNorm.includes('2') || s === shiftNorm;
+      return cocokTgl && cocokShift;
+    });
+    const rowsBaru: KL2Row[] = Array.from({ length: 10 }, () => kl2EmptyRow());
+    cocok.slice(0, 10).forEach((r, i) => { rowsBaru[i] = rowDariRecord(r, lb); });
+    if (cocok.length === 0 && matriks.totalPnp > 0) {
+      rowsBaru[0] = { lambung: lb.toUpperCase(), umum: { qris: qrisPnp.umum || 0, tap: tapPnp.umum || 0, siAnteng: siAntengPnp.umum || 0, manual: manualPnp.umum || 0, eTick: tunaiPnp.umum || 0 }, pelajar: { qris: qrisPnp.pelajar || 0, tap: tapPnp.pelajar || 0, siAnteng: siAntengPnp.pelajar || 0, manual: manualPnp.pelajar || 0, eTick: tunaiPnp.pelajar || 0 }, buruh: { qris: qrisPnp.buruh || 0, tap: tapPnp.buruh || 0, siAnteng: siAntengPnp.buruh || 0, manual: manualPnp.buruh || 0, eTick: tunaiPnp.buruh || 0 }, veteran: { qris: qrisPnp.veteran || 0, tap: tapPnp.veteran || 0, siAnteng: siAntengPnp.veteran || 0, manual: manualPnp.veteran || 0, eTick: tunaiPnp.veteran || 0 } };
+    }
+    setKl2Rows(rowsBaru);
+    showToast(cocok.length > 0 ? `KL2 diisi otomatis dari ${cocok.length} riwayat hari ini.` : (matriks.totalPnp > 0 ? 'KL2 diisi dari input KL1 yang sedang diisi (baris 1).' : 'Tidak ada riwayat hari ini — isi manual 10 barisnya.'), cocok.length > 0 || matriks.totalPnp > 0 ? 'ok' : 'err');
+  };
+  const dataKL2: KL2Data = {
+    hari: (() => { try { return ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'][new Date(Number(tanggal.slice(0, 4)), Number(tanggal.slice(5, 7)) - 1, Number(tanggal.slice(8, 10))).getDay()]; } catch { return '-'; } })(),
+    tanggal: `${tanggal.slice(8, 10)}-${tanggal.slice(5, 7)}-${tanggal.slice(0, 4)}`,
+    shift: shift.toUpperCase().includes('2') ? 'SHIFT 2' : 'SHIFT 1',
+    shelter: kl2Shelter, adminKasir: petugasNama, rows: kl2Rows,
+  };
   // KL1 TTD PRAMUJASA: nama dari DB_PRAMUJASA lewat API Pramujasa (kunci ID_PERJALANAN)
   const [pramujasaKL1, setPramujasaKL1] = useState<string>('');
   const [pramujasaKL1Loading, setPramujasaKL1Loading] = useState<boolean>(false);
@@ -748,8 +1004,20 @@ export function KasirScreen({
     const tglRaw = m?.[4] || '';
     const tanggalKL1 = tglRaw ? `${tglRaw.slice(6, 8)}-${tglRaw.slice(4, 6)}-${tglRaw.slice(0, 4)}` : tanggal;
     const hariKL1 = tglRaw ? ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'][new Date(Number(tglRaw.slice(0, 4)), Number(tglRaw.slice(4, 6)) - 1, Number(tglRaw.slice(6, 8))).getDay()] : '-';
+    // POOL / TERMINAL AWAL — JANGAN pakai KOR01 (itu koridor, bukan terminal).
+    // Ambil dari DB_MASTER sheet MASTER_JADWAL lewat util yang sama dengan
+    // Terminal Akhir (getTerminalAkhirFromMasterRit sudah baca MASTER_JADWAL).
+    // Di MASTER_JADWAL terminal hanya ada 2: BULUPITU & BUKATEJA, jadi
+    // TERMINAL_AWAL = lawan TERMINAL_AKHIR untuk LB + RIT yang sama.
+    // Contoh: RIT yang TERMINAL_AKHIR-nya BULUPITU -> TERMINAL_AWAL-nya BUKATEJA.
+    // Pakai LB + RIT dari ID_PERJALANAN (bukan dari input sekarang), supaya
+    // KL1 dari riwayat lama tetap dapat terminal yang benar.
+    const lbKL1 = m?.[2] || lb;
+    const ritKL1 = m?.[3] || rit;
+    const akhirKL1 = String(getTerminalAkhirFromMasterRit(lbKL1, ritKL1) || '').toUpperCase();
+    const poolKL1 = akhirKL1.includes('BULUPITU') ? 'BUKATEJA' : akhirKL1.includes('BUKATEJA') ? 'BULUPITU' : '';
     return {
-      idPerjalanan, pool: m?.[1] || koridor, lambung: m?.[2] || lb, shift: shift.toUpperCase().includes('2') ? 'SHIFT 2' : 'SHIFT 1',
+      idPerjalanan, pool: poolKL1 || '-', lambung: lbKL1, shift: shift.toUpperCase().includes('2') ? 'SHIFT 2' : 'SHIFT 1',
       hari: hariKL1, tanggal: tanggalKL1, tabel1, tabel2, totalPnp, totalRp,
       terbilang: `# ${terbilangKL1(totalRp).trim()} Rupiah #`,
       adminKasir: petugasNama, pramujasa: pramujasaKL1, keterangan: pakaiInput ? (ket.trim() || '-') : (saved?.keterangan || '-'),
@@ -1578,6 +1846,10 @@ export function KasirScreen({
     );
   };
 
+  // KL2: kalau mode KL2 aktif, tampilkan hanya KL2 (persis sheet Excel, Landscape, siap print)
+  if (showKL2) {
+    return <KL2SheetView data={dataKL2} onClose={() => setShowKL2(false)} onRowsChange={setKl2Rows} onShelterChange={setKl2Shelter} onAutoFill={handleKl2AutoFill} />;
+  }
   // KL1: kalau mode KL1 aktif, tampilkan hanya KL1 (persis sheet, Landscape, siap print)
   if (showKL1 && dataKL1) {
     return <KL1SheetView data={dataKL1} onClose={() => setShowKL1(false)} onPramujasaChange={(nama) => { setPramujasaKL1(nama); try { const cache = JSON.parse(localStorage.getItem('anteng_pramujasa_by_id') || '{}') as Record<string, string>; if (nama.trim()) { cache[idPerjalanan] = nama.trim(); localStorage.setItem('anteng_pramujasa_by_id', JSON.stringify(cache)); } } catch {} }} />;
@@ -2129,6 +2401,7 @@ export function KasirScreen({
 
             {/* KL1: tombol LIHAT KL1 - di bawah SIMPAN, di atas BARANG TERTINGGAL */}
             <button type="button" disabled={!dataKL1} onClick={() => setShowKL1(true)} className="w-full py-3.5 rounded-2xl bg-slate-800 hover:bg-slate-900 text-white font-extrabold text-base cursor-pointer disabled:opacity-50">{dataKL1 ? 'LIHAT KL1' : 'FORM KL1 (ISI DATA DULU)'}</button>
+            <button type="button" onClick={() => setShowKL2(true)} className="w-full py-3.5 rounded-2xl bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-base cursor-pointer">LIHAT KL2 (REKAP 1 HARI / 1 SHIFT)</button>
             <button
               type="button"
               onClick={onOpenLostFound}
