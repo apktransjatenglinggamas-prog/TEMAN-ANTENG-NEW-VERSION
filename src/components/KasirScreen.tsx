@@ -652,6 +652,14 @@ export function KasirScreen({
   const [initialDraft] = useState<Partial<KasirDraft>>(() => readKasirDraft(tglHariIni()));
   const [koridor, setKoridor] = useState(initialDraft.koridor || 'KOR01');
   const [lb, setLb] = useState(initialDraft.lb || 'LB01');
+  // ===== PANEL CADANGAN LBC01 — PENAMBAHAN SAJA, fungsi lain tidak diubah =====
+  const [statusPerjalanan, setStatusPerjalanan] = useState('NORMAL');
+  const [idPerjalananAsal, setIdPerjalananAsal] = useState('');
+  const [titikGanti, setTitikGanti] = useState('TERMINAL_AWAL');
+  const [halteTitikGanti, setHalteTitikGanti] = useState('');
+  const isCadangan = lb === 'LBC01';
+  const tampilPanelCadangan = isCadangan || statusPerjalanan === 'LANJUTAN_SETELAH_PERBAIKAN';
+  const statusPerjalananEfektif = tampilPanelCadangan ? statusPerjalanan : 'NORMAL';
   const [rit, setRit] = useState(initialDraft.rit || 'R01');
   const [shift, setShift] = useState(
     initialDraft.shift ||
@@ -890,8 +898,11 @@ export function KasirScreen({
 
 
   const idPerjalanan = useMemo(
-    () => `${koridor}-${lb}${rit}${tanggal.split('-').join('')}`,
-    [koridor, lb, rit, tanggal]
+    () =>
+      isCadangan && idPerjalananAsal.trim()
+        ? `${koridor}-LBC01${rit}${tanggal.split('-').join('')}-GANTI-${idPerjalananAsal.trim()}`
+        : `${koridor}-${lb}${rit}${tanggal.split('-').join('')}`,
+    [koridor, lb, rit, tanggal, isCadangan, idPerjalananAsal]
   );
 
 
@@ -1582,6 +1593,11 @@ export function KasirScreen({
 
   const handleSimpan = async () => {
     if (sending) return;
+    // Validasi panel cadangan LBC01 — penambahan saja
+    if (isCadangan && !idPerjalananAsal.trim()) {
+      showToast('Isi dulu Bus yang diganti (ID Perjalanan Asal) untuk LBC01.', 'warn');
+      return;
+    }
     if (photoBusyCount > 0) {
       showToast('Foto sedang diproses, tunggu sebentar lalu klik Simpan lagi.', 'warn');
       return;
@@ -1701,6 +1717,10 @@ export function KasirScreen({
       rincianLostFound: lfDetailText,
       lostFoundData: dataLF,
       keterangan: ketVal,
+      statusPerjalanan: statusPerjalananEfektif,
+      idPerjalananAsal: tampilPanelCadangan ? idPerjalananAsal.trim() : '',
+      titikGanti: tampilPanelCadangan ? titikGanti : '',
+      halteTitikGanti: tampilPanelCadangan ? halteTitikGanti : '',
       statusKirim: API_KASIR ? 'MENUNGGU_SYNC' : 'TERSIMPAN_LOKAL',
       waktuCatat: jamSekarangHHMM(),
       createdAt: nowTs,
@@ -1954,6 +1974,39 @@ export function KasirScreen({
             </div>
           </div>
 
+
+          {/* ===== PANEL CADANGAN LBC01 — muncul otomatis kalau LB = LBC01 ===== */}
+          {tampilPanelCadangan && (
+            <div className="rounded-2xl border-2 border-amber-400 bg-amber-50 p-3.5 space-y-2.5">
+              <p className="font-extrabold text-amber-900">🚌 ARMADA CADANGAN AKTIF — {lb}</p>
+              <p className="text-xs text-amber-800">Bus ini menggantikan bus reguler. Setoran ini adalah segmen LBC01, bukan setoran bus reguler.</p>
+              <div>
+                <label className="block text-xs font-extrabold text-slate-700 mb-1">Status Perjalanan</label>
+                <select value={statusPerjalanan} onChange={(e) => setStatusPerjalanan(e.target.value)} className="w-full px-2 py-3 rounded-xl border-2 border-slate-800 font-bold text-center bg-white">
+                  <option value="PENGGANTI">PENGGANTI</option>
+                  <option value="LANJUTAN_SETELAH_PERBAIKAN">LANJUTAN_SETELAH_PERBAIKAN</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-extrabold text-slate-700 mb-1">Menggantikan Bus (ID Perjalanan Asal)</label>
+                <input type="text" placeholder="Contoh: KOR01-LB05R0320261127" value={idPerjalananAsal} onChange={(e) => setIdPerjalananAsal(e.target.value)} className="w-full px-3 py-3 rounded-xl border-2 border-slate-800 bg-white font-mono-num font-bold text-center" />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs font-extrabold text-slate-700 mb-1">Titik Ganti</label>
+                  <select value={titikGanti} onChange={(e) => setTitikGanti(e.target.value)} className="w-full px-2 py-3 rounded-xl border-2 border-slate-800 font-bold text-center bg-white">
+                    <option value="TERMINAL_AWAL">TERMINAL_AWAL</option>
+                    <option value="TENGAH_JALAN">TENGAH_JALAN</option>
+                    <option value="AKHIR_RIT">AKHIR_RIT</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-extrabold text-slate-700 mb-1">Halte Titik Ganti</label>
+                  <input type="text" placeholder="Nama halte (jika tengah jalan)" value={halteTitikGanti} onChange={(e) => setHalteTitikGanti(e.target.value)} className="w-full px-3 py-3 rounded-xl border-2 border-slate-800 bg-white font-bold text-center" />
+                </div>
+              </div>
+            </div>
+          )}
 
           <div>
             <label className="block text-xs font-extrabold text-center text-slate-700 mb-1">
