@@ -16,6 +16,7 @@ import {
   API_TIMER,
   IDS_PRAM_KEY,
   KATEGORI_LIST,
+  LIST_HALTE,
   LIST_KORIDOR,
   LIST_LB,
   LIST_RIT,
@@ -61,17 +62,23 @@ export function PramujasaScreen({
   const [koridor, setKoridor] = useState('KOR01');
   const [lb, setLb] = useState('LB01');
   const [rit, setRit] = useState('R01');
-
   // ===== PANEL CADANGAN LBC01 — PENAMBAHAN SAJA =====
   const [statusPerjalanan, setStatusPerjalanan] = useState('NORMAL');
   const [idPerjalananAsal, setIdPerjalananAsal] = useState('');
   const [titikGanti, setTitikGanti] = useState('TERMINAL_AWAL');
   const [halteTitikGanti, setHalteTitikGanti] = useState('');
   const isCadangan = lb === 'LBC01';
-  const tampilPanelCadangan = isCadangan || statusPerjalanan === 'LANJUTAN_SETELAH_PERBAIKAN';
+  const tampilPanelCadangan = isCadangan; // panel HANYA kalau LB = LBC01 — jangan ikut status, biar tidak nyangkut saat LB diganti
   const statusPerjalananEfektif = tampilPanelCadangan ? statusPerjalanan : 'NORMAL';
-
   const [shift, setShift] = useState('SHIFT 1');
+  // Shift otomatis ngikut rit, biar rekap tidak 0 kalau petugas lupa ganti dropdown
+  // R01-R04 = SHIFT 1, R05-R08 = SHIFT 2
+  useEffect(() => {
+    const num = parseInt(rit.replace(/[^0-9]/g, ''), 10);
+    if (!isNaN(num)) {
+      setShift(num >= 5 ? 'SHIFT 2' : 'SHIFT 1');
+    }
+  }, [rit]);
   const [jamTiba, setJamTiba] = useState(jamSekarangHHMM());
   const [jamManual, setJamManual] = useState(false);
 
@@ -82,25 +89,26 @@ export function PramujasaScreen({
   const [manualArah, setManualArah] = useState<'BP' | 'BK'>('BP');
   const [selectedHalteId, setSelectedHalteId] = useState('');
 
-  // Input penumpang per halte dengan dropdown jenis transaksi (metodeBayar)
-  const [metodeBayar, setMetodeBayar] = useState('TUNAI');
-  const [pnpCounts, setPnpCounts] = useState<Record<KategoriKey, string>>({
-    umum: '',
-    buruh: '',
-    pelajar: '',
-    lansia: '',
-    disabilitas: '',
-    veteran: '',
-  });
-  const [turunHalte, setTurunHalte] = useState('');
-  const [transitHalte, setTransitHalte] = useState('');
-  const [pptHalte, setPptHalte] = useState('');
+  // Input kolom Tunai & Non-Tunai per kategori (seperti modul Kasir, tanpa dropdown)
+  const [tunaiInputs, setTunaiInputs] = useState<KategoriCounts>(emptyKategoriCounts);
+  const [nonTunaiInputs, setNonTunaiInputs] = useState<KategoriCounts>(emptyKategoriCounts);
+  // ===== INPUT PER JENIS (sesuai screenshot): TUNAI / NON-TUNAI / MANUAL / PPT =====
+  // Manual & PPT per kategori, masing-masing bisa dilipat. Menutup blok TIDAK menghapus input.
+  const [manualInputs, setManualInputs] = useState<KategoriCounts>(emptyKategoriCounts);
+  const [pptInputs, setPptInputs] = useState<KategoriCounts>(emptyKategoriCounts);
+  const [openJenis, setOpenJenis] = useState<Record<string, boolean>>({ tunai: true, nonTunai: false, manual: false, ppt: false });
+  const toggleJenis = (j: string) => setOpenJenis((prev) => ({ ...prev, [j]: !prev[j] }));
+  const [showLMB, setShowLMB] = useState(false);
+  const [turunHalte, setTurunHalte] = useState('0');
+  const [transitHalte, setTransitHalte] = useState('0');
+  const [pptHalte, setPptHalte] = useState('0');
   const [ket, setKet] = useState('');
 
   const [riwayat, setRiwayat] = useState<PramujasaRecord[]>(() =>
     bacaStorage<PramujasaRecord>(STORAGE_PRAM_KEY)
   );
   const [showSementara, setShowSementara] = useState(false);
+  const [showRekapShift, setShowRekapShift] = useState(false);
   const [showRiwayat, setShowRiwayat] = useState(false);
   const [lastWaMsg, setLastWaMsg] = useState('');
   const [sending, setSending] = useState(false);
@@ -108,7 +116,7 @@ export function PramujasaScreen({
   const idPerjalanan = useMemo(
     () =>
       isCadangan && idPerjalananAsal.trim()
-        ? `${koridor}-LBC01${rit}${tanggal.split('-').join('')}-GANTI-${idPerjalananAsal.trim()}`
+        ? `${koridor}-LBC01${rit}${tanggal.split('-').join('')}-GANTI-${idPerjalananAsal.trim().toUpperCase()}`
         : `${koridor}-${lb}${rit}${tanggal.split('-').join('')}`,
     [koridor, lb, rit, tanggal, isCadangan, idPerjalananAsal]
   );
@@ -157,49 +165,128 @@ export function PramujasaScreen({
       return masterHalte;
     }
 
-    return [
-      { id: 'HT01', nama: 'Terminal Bulupitu', koridor, arah: 'BP' },
-      { id: 'HT02', nama: 'Halte Simpang Purbalingga', koridor, arah: 'BP' },
-      { id: 'HT03', nama: 'Terminal Bukateja', koridor, arah: 'BK' },
-    ];
+    return LIST_HALTE.map((h) => ({
+      id: h.id,
+      koridor: 'KOR01',
+      nama: h.value,
+      arah: arahAktif,
+      status: 'AKTIF',
+    }));
   }, [masterHalte, koridor, arahAktif]);
 
-  const selectedHalte = useMemo(() => {
-    return halteSearah.find((h) => h.id === selectedHalteId) || halteSearah[0] || null;
+  // Pastikan selectedHalteId selalu valid mengikuti halte searah saat ganti bus/rit/arah
+  useEffect(() => {
+    if (halteSearah.length === 0) return;
+    const stillValid = halteSearah.some((h) => h.id === selectedHalteId);
+    if (!stillValid) {
+      setSelectedHalteId(halteSearah[0].id);
+    }
   }, [halteSearah, selectedHalteId]);
 
-  // Default pilih pramudi pertama jika belum dipilih
-  const selectedPramudi = useMemo(() => {
-    if (masterPramudi.length === 0) return null;
-    return masterPramudi.find((p) => p.id === selectedPramudiId) || masterPramudi[0] || null;
+  // Auto-select Pramudi pertama jika daftar MASTER_PRAMUDI termuat
+  useEffect(() => {
+    if (masterPramudi.length > 0 && !selectedPramudiId) {
+      setSelectedPramudiId(masterPramudi[0].id);
+    }
   }, [masterPramudi, selectedPramudiId]);
 
-  // Shift otomatis berdasarkan nomor rit (R01-R04 = SHIFT 1, R05-R08 = SHIFT 2)
+  const selectedPramudi = useMemo(
+    () => masterPramudi.find((p) => p.id === selectedPramudiId) || null,
+    [masterPramudi, selectedPramudiId]
+  );
+
+  const selectedHalte = useMemo(
+    () => halteSearah.find((h) => h.id === selectedHalteId) || halteSearah[0],
+    [halteSearah, selectedHalteId]
+  );
+
   useEffect(() => {
+    setTanggal(tglHariIni());
     if (!jamManual) {
       setJamTiba(jamSekarangHHMM());
-    }
-    const ritStr = String(rit || '').toUpperCase();
-    const num = parseInt(ritStr.replace(/[^0-9]/g, ''), 10);
-    if (!isNaN(num)) {
-      if (num >= 1 && num <= 4) setShift('SHIFT 1');
-      else if (num >= 5) setShift('SHIFT 2');
     }
   }, [koridor, lb, rit, jamManual]);
 
   const subtotalHalte = useMemo(() => {
-    let sub = 0;
+    let subTunai = 0;
+    let subNonTunai = 0;
+    let subManual = 0;
+    let subPPT = 0;
     for (const k of KATEGORI_LIST) {
-      sub += Math.max(0, parseInt(pnpCounts[k.key], 10) || 0);
+      subTunai += Math.max(0, tunaiInputs[k.key] || 0);
+      subNonTunai += Math.max(0, nonTunaiInputs[k.key] || 0);
+      subManual += Math.max(0, manualInputs[k.key] || 0);
+      subPPT += Math.max(0, pptInputs[k.key] || 0);
     }
-    return sub;
-  }, [pnpCounts]);
+    return {
+      subTunai,
+      subNonTunai,
+      subManual,
+      subPPT,
+      // Total Naik = Tunai + Non-Tunai + Manual. PPT TIDAK MASUK.
+      total: subTunai + subNonTunai + subManual,
+      totalPPT: subPPT,
+    };
+  }, [tunaiInputs, nonTunaiInputs, manualInputs, pptInputs]);
+  // Manual & PPT yang sudah tersimpan sementara (dari field tambahan di record)
+  const manualPptTersimpan = useMemo(() => {
+    let m = 0; let pp = 0;
+    for (const d of riwayat) {
+      if (!d || d.idPerjalanan !== idPerjalanan) continue;
+      const extra = d as unknown as { manual?: KategoriCounts; pptCounts?: KategoriCounts };
+      if (extra.manual) for (const k of KATEGORI_LIST) m += Math.max(0, extra.manual[k.key] || 0);
+      if (extra.pptCounts) for (const k of KATEGORI_LIST) pp += Math.max(0, extra.pptCounts[k.key] || 0);
+    }
+    return { manual: m, ppt: pp };
+  }, [riwayat, idPerjalanan]);
 
   // Akumulasi selama 1 Rit (data tersimpan di rit ini)
   const ringkasRitTersimpan = useMemo(
     () => hitungRingkasanRitPram(riwayat, tanggal, lb, rit, idPerjalanan),
     [riwayat, tanggal, lb, rit, idPerjalanan]
   );
+
+  // REKAP 1 SHIFT: total gabungan semua rit dalam 1 shift
+  // Bisa dilihat walau baru jalan 1, 2, atau 3 rit - totalnya nambah live
+  // Shift 1 = R01-R04, Shift 2 = R05-R08
+  // UPGRADE dari file _2: ditambah totalTransit & totalPPT + perRit transit/ppt
+  const rekapShift = useMemo(() => {
+    const ritShift1 = ['R01', 'R02', 'R03', 'R04'];
+    const ritShift2 = ['R05', 'R06', 'R07', 'R08'];
+    const ritDiShiftIni = shift === 'SHIFT 2' ? ritShift2 : ritShift1;
+
+    const list = riwayat.filter((d) => {
+      if (!d) return false;
+      if (d.tanggal && d.tanggal !== tanggal) return false;
+      if (d.koridor && d.koridor !== koridor) return false;
+      if (d.noLambung && d.noLambung !== lb) return false;
+      if (!ritDiShiftIni.includes(d.rit)) return false;
+      // Jangan filter kaku pakai d.shift, karena rit sudah menentukan shift
+      // R01-R04 pasti Shift 1, R05-R08 pasti Shift 2
+      return true;
+    });
+
+    const perRitMap = new Map();
+    let totalNaik = 0, totalTunai = 0, totalNonTunai = 0, totalTurun = 0, totalTransit = 0, totalPPT = 0;
+
+    for (const d of list) {
+      const norm = normalizePramRecord(d);
+      const naik = norm.totalHalte || 0;
+      totalNaik += naik;
+      totalTunai += norm.totalTunai || 0;
+      totalNonTunai += norm.totalNonTunai || 0;
+      totalTurun += d.penumpangTurun || 0;
+      totalTransit += d.penumpangTransit || 0;
+      totalPPT += d.penumpangPPT || 0;
+      const key = d.idPerjalanan || d.rit;
+      const cur = perRitMap.get(key) || { rit: d.rit, idPerjalanan: d.idPerjalanan, naik: 0, tunai: 0, nonTunai: 0, turun: 0, transit: 0, ppt: 0, halte: 0 };
+      cur.naik += naik; cur.tunai += norm.totalTunai || 0; cur.nonTunai += norm.totalNonTunai || 0;
+      cur.turun += d.penumpangTurun || 0; cur.transit += d.penumpangTransit || 0; cur.ppt += d.penumpangPPT || 0; cur.halte += 1;
+      perRitMap.set(key, cur);
+    }
+    const perRit = Array.from(perRitMap.values()).sort((a, b) => a.rit.localeCompare(b.rit));
+    return { list, perRit, jumlahRitJalan: perRit.length, totalNaik, totalTunai, totalNonTunai, totalTurun, totalTransit, totalPPT };
+  }, [riwayat, tanggal, koridor, lb, shift]);
 
   // Transaksi sementara per halte (SEMENTARA / GAGAL_KIRIM) untuk rit aktif / hari ini
   const transaksiSementaraPerHalte = useMemo(
@@ -235,22 +322,26 @@ export function PramujasaScreen({
     [riwayat, idPerjalanan]
   );
 
-  const updatePnpCount = (key: KategoriKey, rawVal: string) => {
-    setPnpCounts((prev) => ({ ...prev, [key]: rawVal }));
+  const updateKategoriInput = (
+    jenis: 'tunai' | 'nonTunai' | 'manual' | 'ppt',
+    key: KategoriKey,
+    rawVal: string
+  ) => {
+    const num = Math.max(0, parseInt(rawVal, 10) || 0);
+    if (jenis === 'tunai') setTunaiInputs((prev) => ({ ...prev, [key]: num }));
+    else if (jenis === 'nonTunai') setNonTunaiInputs((prev) => ({ ...prev, [key]: num }));
+    else if (jenis === 'manual') setManualInputs((prev) => ({ ...prev, [key]: num }));
+    else setPptInputs((prev) => ({ ...prev, [key]: num }));
   };
 
   const bersihkanInputHalte = () => {
-    setPnpCounts({
-      umum: '',
-      buruh: '',
-      pelajar: '',
-      lansia: '',
-      disabilitas: '',
-      veteran: '',
-    });
-    setTurunHalte('');
-    setTransitHalte('');
-    setPptHalte('');
+    setTunaiInputs(emptyKategoriCounts());
+    setNonTunaiInputs(emptyKategoriCounts());
+    setManualInputs(emptyKategoriCounts());
+    setPptInputs(emptyKategoriCounts());
+    setTurunHalte('0');
+    setTransitHalte('0');
+    setPptHalte('0');
     setKet('');
     setJamManual(false);
   };
@@ -261,11 +352,6 @@ export function PramujasaScreen({
       showToast('Isi dulu Bus yang diganti (ID Perjalanan Asal) untuk LBC01.', 'warn');
       return;
     }
-    if (isCadangan && titikGanti === 'TENGAH_JALAN' && !halteTitikGanti.trim()) {
-      showToast('Isi dulu Halte Titik Ganti untuk LBC01.', 'warn');
-      return;
-    }
-
     const freshRiw = bacaStorage<PramujasaRecord>(STORAGE_PRAM_KEY);
     if (
       freshRiw.some((r) => r.idPerjalanan === idPerjalanan && r.status === 'TERVALIDASI') ||
@@ -277,9 +363,9 @@ export function PramujasaScreen({
 
     const turunNum = Math.max(0, parseInt(turunHalte, 10) || 0);
     const transitNum = Math.max(0, parseInt(transitHalte, 10) || 0);
-    const pptNum = Math.max(0, parseInt(pptHalte, 10) || 0);
-    if (subtotalHalte === 0 && turunNum === 0 && transitNum === 0 && pptNum === 0) {
-      showToast('Isi jumlah penumpang halte terlebih dahulu.', 'warn');
+    const pptNum = subtotalHalte.totalPPT; // PPT dari blok PNP PPT per kategori, bukan dari kotak terpisah
+    if (subtotalHalte.total === 0 && turunNum === 0 && transitNum === 0 && pptNum === 0) {
+      showToast('Isi jumlah penumpang (Tunai atau Non-Tunai) halte terlebih dahulu.', 'warn');
       return;
     }
 
@@ -288,18 +374,7 @@ export function PramujasaScreen({
     const halteId = selectedHalte?.id || 'HT01';
     const halteNama = selectedHalte?.nama || 'Halte';
 
-    const counts: KategoriCounts = {
-      umum: Math.max(0, parseInt(pnpCounts.umum, 10) || 0),
-      buruh: Math.max(0, parseInt(pnpCounts.buruh, 10) || 0),
-      pelajar: Math.max(0, parseInt(pnpCounts.pelajar, 10) || 0),
-      lansia: Math.max(0, parseInt(pnpCounts.lansia, 10) || 0),
-      disabilitas: Math.max(0, parseInt(pnpCounts.disabilitas, 10) || 0),
-      veteran: Math.max(0, parseInt(pnpCounts.veteran, 10) || 0),
-    };
-    const sumCat = KATEGORI_LIST.reduce((acc, k) => acc + counts[k.key], 0);
-    const isNT = metodeBayar.toUpperCase().includes('NON TUNAI') || metodeBayar.toUpperCase().includes('NON-TUNAI');
-
-    const newItem: PramujasaRecord = {
+    const itemBaru: PramujasaRecord = {
       idTransaksi: `PJT_${nowMs}`,
       idDetail: `TJD_${nowMs}`,
       tanggal,
@@ -311,37 +386,46 @@ export function PramujasaScreen({
       jamTiba: jam,
       idHalte: halteId,
       namaHalte: halteNama,
-      metodeBayar,
-      tunai: isNT ? emptyKategoriCounts() : counts,
-      nonTunai: isNT ? counts : emptyKategoriCounts(),
-      totalTunai: isNT ? 0 : sumCat,
-      totalNonTunai: isNT ? sumCat : 0,
-      totalHalte: sumCat,
+      tunai: { ...tunaiInputs },
+      nonTunai: { ...nonTunaiInputs },
+      totalTunai: subtotalHalte.subTunai,
+      totalNonTunai: subtotalHalte.subNonTunai,
+      totalHalte: subtotalHalte.total,
+      // Manual + PPT per kategori — disimpan sebagai field tambahan (tidak mengubah field lama)
+      ...({ manual: { ...manualInputs }, pptCounts: { ...pptInputs } } as unknown as Partial<PramujasaRecord>),
       penumpangTurun: turunNum,
       penumpangTransit: transitNum,
       penumpangPPT: pptNum,
       keterangan: ket.trim() || '-',
+      statusPerjalanan: statusPerjalananEfektif,
+      idPerjalananAsal: tampilPanelCadangan ? idPerjalananAsal.trim() : '',
+      titikGanti: tampilPanelCadangan ? titikGanti : '',
+      halteTitikGanti: tampilPanelCadangan ? halteTitikGanti : '',
       petugas: petugasNama,
       idPramudi: selectedPramudi?.id || '',
       namaPramudi: selectedPramudi?.nama || '',
       status: 'SEMENTARA',
       waktuKirim: jam,
-      // ===== 4 field cadangan — penambahan saja =====
-      statusPerjalanan: statusPerjalananEfektif,
-      idPerjalananAsal: tampilPanelCadangan ? idPerjalananAsal.trim().toUpperCase() : '',
-      titikGanti: tampilPanelCadangan ? titikGanti : '',
-      halteTitikGanti: tampilPanelCadangan ? halteTitikGanti.trim().toUpperCase() : '',
     };
 
-    const updated = [newItem, ...freshRiw];
+    const current = bacaStorage<PramujasaRecord>(STORAGE_PRAM_KEY);
+    const updated = [itemBaru, ...current];
     tulisStorage(STORAGE_PRAM_KEY, updated);
     setRiwayat(updated);
     bersihkanInputHalte();
-    showToast('Data halte berhasil disimpan sementara!', 'ok');
+
+    const ringkasBaru = hitungRingkasanRitPram(updated, tanggal, lb, rit, idPerjalanan);
+    showToast(
+      `Disimpan SEMENTARA (${halteNama}). Akumulasi rit: ${ringkasBaru.totalRit} pnp (Tunai ${ringkasBaru.totalTunai} | Non-Tunai ${ringkasBaru.totalNonTunai}).`,
+      'warn'
+    );
   };
 
-  const handleHapusSementarItem = (idDetail: string) => {
-    const updated = riwayat.filter((d) => d.idDetail !== idDetail);
+  const handleHapusDraft = (idDetail: string) => {
+    const current = bacaStorage<PramujasaRecord>(STORAGE_PRAM_KEY);
+    const updated = current.filter(
+      (item) => !(item.idDetail === idDetail && item.status !== 'TERVALIDASI')
+    );
     tulisStorage(STORAGE_PRAM_KEY, updated);
     setRiwayat(updated);
     showToast('Transaksi sementara halte dihapus.', 'ok');
@@ -349,16 +433,6 @@ export function PramujasaScreen({
 
   const handleValidasiKirim = async () => {
     if (sending) return;
-
-    // Validasi panel cadangan LBC01 — penambahan saja
-    if (isCadangan && !idPerjalananAsal.trim()) {
-      showToast('Isi dulu Bus yang diganti (ID Perjalanan Asal) untuk LBC01.', 'warn');
-      return;
-    }
-    if (isCadangan && titikGanti === 'TENGAH_JALAN' && !halteTitikGanti.trim()) {
-      showToast('Isi dulu Halte Titik Ganti untuk LBC01.', 'warn');
-      return;
-    }
 
     let currentRiw = bacaStorage<PramujasaRecord>(STORAGE_PRAM_KEY);
     if (
@@ -371,7 +445,7 @@ export function PramujasaScreen({
 
     const turunNum = Math.max(0, parseInt(turunHalte, 10) || 0);
     const transitNum = Math.max(0, parseInt(transitHalte, 10) || 0);
-    const pptNum = Math.max(0, parseInt(pptHalte, 10) || 0);
+    const pptNum = subtotalHalte.totalPPT; // PPT dari blok PNP PPT per kategori
     const jam = jamTiba || jamSekarangHHMM();
     const ketVal = ket.trim() || '-';
     const nowTs = timestampSekarang();
@@ -381,18 +455,7 @@ export function PramujasaScreen({
     const halteId = selectedHalte?.id || 'HT01';
     const halteNama = selectedHalte?.nama || 'Halte';
 
-    if (subtotalHalte > 0 || turunNum > 0 || transitNum > 0 || pptNum > 0) {
-      const counts: KategoriCounts = {
-        umum: Math.max(0, parseInt(pnpCounts.umum, 10) || 0),
-        buruh: Math.max(0, parseInt(pnpCounts.buruh, 10) || 0),
-        pelajar: Math.max(0, parseInt(pnpCounts.pelajar, 10) || 0),
-        lansia: Math.max(0, parseInt(pnpCounts.lansia, 10) || 0),
-        disabilitas: Math.max(0, parseInt(pnpCounts.disabilitas, 10) || 0),
-        veteran: Math.max(0, parseInt(pnpCounts.veteran, 10) || 0),
-      };
-      const sumCat = KATEGORI_LIST.reduce((acc, k) => acc + counts[k.key], 0);
-      const isNT = metodeBayar.toUpperCase().includes('NON TUNAI') || metodeBayar.toUpperCase().includes('NON-TUNAI');
-
+    if (subtotalHalte.total > 0 || turunNum > 0 || transitNum > 0 || pptNum > 0) {
       const itemHalteAkhir: PramujasaRecord = {
         idTransaksi: idPramTransaksi,
         idDetail: `TJD_${nowMs}`,
@@ -405,12 +468,12 @@ export function PramujasaScreen({
         jamTiba: jam,
         idHalte: halteId,
         namaHalte: halteNama,
-        metodeBayar,
-        tunai: isNT ? emptyKategoriCounts() : counts,
-        nonTunai: isNT ? counts : emptyKategoriCounts(),
-        totalTunai: isNT ? 0 : sumCat,
-        totalNonTunai: isNT ? sumCat : 0,
-        totalHalte: sumCat,
+        tunai: { ...tunaiInputs },
+        nonTunai: { ...nonTunaiInputs },
+        totalTunai: subtotalHalte.subTunai,
+        totalNonTunai: subtotalHalte.subNonTunai,
+        totalHalte: subtotalHalte.total,
+        ...({ manual: { ...manualInputs }, pptCounts: { ...pptInputs } } as unknown as Partial<PramujasaRecord>),
         penumpangTurun: turunNum,
         penumpangTransit: transitNum,
         penumpangPPT: pptNum,
@@ -420,11 +483,6 @@ export function PramujasaScreen({
         namaPramudi: selectedPramudi?.nama || '',
         status: 'SEMENTARA',
         waktuKirim: jam,
-        // ===== 4 field cadangan — penambahan saja =====
-        statusPerjalanan: statusPerjalananEfektif,
-        idPerjalananAsal: tampilPanelCadangan ? idPerjalananAsal.trim().toUpperCase() : '',
-        titikGanti: tampilPanelCadangan ? titikGanti : '',
-        halteTitikGanti: tampilPanelCadangan ? halteTitikGanti.trim().toUpperCase() : '',
       };
       currentRiw = [itemHalteAkhir, ...currentRiw];
       tulisStorage(STORAGE_PRAM_KEY, currentRiw);
@@ -460,12 +518,18 @@ export function PramujasaScreen({
         NONTUNAI_LANSIA: norm.nonTunai.lansia,
         NONTUNAI_VETERAN: norm.nonTunai.veteran,
         NONTUNAI_DISABILITAS: norm.nonTunai.disabilitas,
-        MANUAL_UMUM: 0,
-        MANUAL_PELAJAR: 0,
-        MANUAL_BURUH: 0,
-        MANUAL_LANSIA: 0,
-        MANUAL_VETERAN: 0,
-        MANUAL_DISABILITAS: 0,
+        MANUAL_UMUM: (item as unknown as { manual?: KategoriCounts }).manual?.umum || 0,
+        MANUAL_PELAJAR: (item as unknown as { manual?: KategoriCounts }).manual?.pelajar || 0,
+        MANUAL_BURUH: (item as unknown as { manual?: KategoriCounts }).manual?.buruh || 0,
+        MANUAL_LANSIA: (item as unknown as { manual?: KategoriCounts }).manual?.lansia || 0,
+        MANUAL_VETERAN: (item as unknown as { manual?: KategoriCounts }).manual?.veteran || 0,
+        MANUAL_DISABILITAS: (item as unknown as { manual?: KategoriCounts }).manual?.disabilitas || 0,
+        PPT_UMUM: (item as unknown as { pptCounts?: KategoriCounts }).pptCounts?.umum || 0,
+        PPT_PELAJAR: (item as unknown as { pptCounts?: KategoriCounts }).pptCounts?.pelajar || 0,
+        PPT_BURUH: (item as unknown as { pptCounts?: KategoriCounts }).pptCounts?.buruh || 0,
+        PPT_LANSIA: (item as unknown as { pptCounts?: KategoriCounts }).pptCounts?.lansia || 0,
+        PPT_VETERAN: (item as unknown as { pptCounts?: KategoriCounts }).pptCounts?.veteran || 0,
+        PPT_DISABILITAS: (item as unknown as { pptCounts?: KategoriCounts }).pptCounts?.disabilitas || 0,
         TOTAL_TURUN: item.penumpangTurun || 0,
         TOTAL_TRANSIT: item.penumpangTransit || 0,
         TOTAL_PPT: item.penumpangPPT || 0,
@@ -479,6 +543,7 @@ export function PramujasaScreen({
 
     const ringkasRit = hitungRingkasanRitPram(currentRiw, tanggal, lb, rit, idPerjalanan);
 
+    // Gunakan Pramudi yang dipilih di Box Pramudi; fallback ke lookup Timer jika kosong
     let namaPramudiFinal = selectedPramudi?.nama || '';
     if (!namaPramudiFinal) {
       try {
@@ -515,11 +580,6 @@ export function PramujasaScreen({
       KETERANGAN: ketVal,
       UPDATED_AT: nowTs,
       UPDATED_BY: petugasNama,
-      // ===== 4 field cadangan — penambahan saja =====
-      STATUS_PERJALANAN: statusPerjalananEfektif,
-      ID_PERJALANAN_ASAL: tampilPanelCadangan ? idPerjalananAsal.trim().toUpperCase() : '',
-      TITIK_GANTI: tampilPanelCadangan ? titikGanti : '',
-      HALTE_TITIK_GANTI: tampilPanelCadangan ? halteTitikGanti.trim().toUpperCase() : '',
     };
 
     const payload = {
@@ -623,10 +683,6 @@ export function PramujasaScreen({
 
   const handleReset = () => {
     bersihkanInputHalte();
-    setStatusPerjalanan('NORMAL');
-    setIdPerjalananAsal('');
-    setTitikGanti('TERMINAL_AWAL');
-    setHalteTitikGanti('');
     setJamTiba(jamSekarangHHMM());
     setLastWaMsg('');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -641,7 +697,7 @@ export function PramujasaScreen({
           <div className="pr-10">
             <h2 className="text-xl font-extrabold leading-tight">Selamat Bekerja {petugasNama}</h2>
             <p className="text-sm text-white/90 font-medium">
-              Pilih metode bayar &amp; isi jumlah penumpang per kategori halte!
+              Isi jumlah penumpang Tunai &amp; Non-Tunai di kolom kategori halte!
             </p>
           </div>
           <button
@@ -719,29 +775,24 @@ export function PramujasaScreen({
 
           {/* ===== PANEL CADANGAN LBC01 — muncul otomatis kalau LB = LBC01 ===== */}
           {tampilPanelCadangan && (
-            <div className="rounded-2xl border-2 border-amber-400 bg-amber-50 p-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <span className="text-xl">🚌</span>
-                <div>
-                  <h3 className="font-extrabold text-amber-900 text-sm">ARMADA CADANGAN AKTIF — {lb}</h3>
-                  <p className="text-xs text-amber-800">Bus ini menggantikan bus reguler. Lengkapi keterangan pengganti di bawah.</p>
-                </div>
+            <div className="rounded-2xl border-2 border-amber-400 bg-amber-50 p-3.5 space-y-2.5">
+              <p className="font-extrabold text-amber-900">🚌 ARMADA CADANGAN AKTIF — {lb}</p>
+              <p className="text-xs text-amber-800">Bus ini menggantikan bus reguler. Lengkapi keterangan pengganti di bawah.</p>
+              <div>
+                <label className="block text-xs font-extrabold text-slate-700 mb-1">Status Perjalanan</label>
+                <select value={statusPerjalanan} onChange={(e) => setStatusPerjalanan(e.target.value)} className="w-full px-2 py-3 rounded-xl border-2 border-slate-800 font-bold text-center bg-white">
+                  <option value="PENGGANTI">PENGGANTI</option>
+                  <option value="LANJUTAN_SETELAH_PERBAIKAN">LANJUTAN_SETELAH_PERBAIKAN</option>
+                </select>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-extrabold text-slate-700 mb-1">Status Perjalanan</label>
-                  <select value={statusPerjalanan} onChange={(e) => setStatusPerjalanan(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border-2 border-slate-800 bg-white font-bold">
-                    <option value="PENGGANTI">PENGGANTI</option>
-                    <option value="LANJUTAN_SETELAH_PERBAIKAN">LANJUTAN_SETELAH_PERBAIKAN</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-extrabold text-slate-700 mb-1">Menggantikan Bus (ID Asal)</label>
-                  <input type="text" placeholder="Contoh: KOR01-LB05R0320261127" value={idPerjalananAsal} onChange={(e) => setIdPerjalananAsal(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border-2 border-slate-800 bg-white font-mono-num font-bold text-center" />
-                </div>
+              <div>
+                <label className="block text-xs font-extrabold text-slate-700 mb-1">Menggantikan Bus (ID Perjalanan Asal)</label>
+                <input type="text" placeholder="Contoh: KOR01-LB05R0320261127" value={idPerjalananAsal} onChange={(e) => setIdPerjalananAsal(e.target.value)} className="w-full px-3 py-3 rounded-xl border-2 border-slate-800 bg-white font-mono-num font-bold text-center" />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="block text-xs font-extrabold text-slate-700 mb-1">Titik Ganti</label>
-                  <select value={titikGanti} onChange={(e) => setTitikGanti(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border-2 border-slate-800 bg-white font-bold">
+                  <select value={titikGanti} onChange={(e) => setTitikGanti(e.target.value)} className="w-full px-2 py-3 rounded-xl border-2 border-slate-800 font-bold text-center bg-white">
                     <option value="TERMINAL_AWAL">TERMINAL_AWAL</option>
                     <option value="TENGAH_JALAN">TENGAH_JALAN</option>
                     <option value="AKHIR_RIT">AKHIR_RIT</option>
@@ -749,7 +800,7 @@ export function PramujasaScreen({
                 </div>
                 <div>
                   <label className="block text-xs font-extrabold text-slate-700 mb-1">Halte Titik Ganti</label>
-                  <input type="text" placeholder="Nama halte (jika tengah jalan)" value={halteTitikGanti} onChange={(e) => setHalteTitikGanti(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border-2 border-slate-800 bg-white font-bold text-center" />
+                  <input type="text" placeholder="Nama halte (jika tengah jalan)" value={halteTitikGanti} onChange={(e) => setHalteTitikGanti(e.target.value)} className="w-full px-3 py-3 rounded-xl border-2 border-slate-800 bg-white font-bold text-center" />
                 </div>
               </div>
             </div>
@@ -873,83 +924,112 @@ export function PramujasaScreen({
             </select>
           </div>
 
-          {/* KOLOM INPUT KATEGORI PENUMPANG DENGAN DROPDOWN METODE / JENIS TRANSAKSI */}
-          <div className="bg-white border-2 border-slate-300 rounded-2xl p-4 space-y-3">
+          {/* INPUT PENUMPANG HALTE INI (PER JENIS) — 4 blok lipat, sesuai screenshot */}
+          <div className="bg-white border-2 border-slate-300 rounded-2xl p-3.5 space-y-2.5">
             <div className="text-center">
               <h4 className="text-sm font-extrabold text-slate-900">
-                INPUT PENUMPANG HALTE INI
+                INPUT PENUMPANG HALTE INI (PER JENIS)
               </h4>
               <p className="text-xs font-semibold text-slate-500 mt-0.5">
-                Pilih metode pembayaran, lalu isi jumlah penumpang per kategori
+                Ketuk jenis untuk membuka / menutup isinya
               </p>
             </div>
 
-            <div>
-              <label className="block text-xs font-extrabold text-slate-700 mb-1">
-                Jenis Transaksi / Metode Pembayaran
-              </label>
-              <select
-                value={metodeBayar}
-                onChange={(e) => setMetodeBayar(e.target.value)}
-                className="w-full px-3 py-3 rounded-xl border-2 border-slate-800 bg-white font-extrabold text-center text-base"
-              >
-                <option value="TUNAI">TUNAI</option>
-                <option value="NON-TUNAI">NON-TUNAI</option>
-              </select>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-2">
-              {KATEGORI_LIST.map((kat) => (
-                <div key={kat.key} className="bg-slate-50 border border-slate-200 rounded-xl p-2.5">
-                  <label className="block text-xs font-extrabold text-slate-800 mb-1">
-                    {kat.label}
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    placeholder="0"
-                    value={pnpCounts[kat.key]}
-                    onChange={(e) => updatePnpCount(kat.key, e.target.value)}
-                    className="w-full px-2 py-2.5 rounded-xl border-2 border-slate-700 bg-white font-mono-num font-extrabold text-center text-lg text-slate-900"
-                  />
+            {/* PNP TUNAI */}
+            <div className="rounded-2xl border-2 border-emerald-200 bg-emerald-50 overflow-hidden">
+              <button type="button" onClick={() => toggleJenis('tunai')} className="w-full flex justify-between items-center px-3 py-3 cursor-pointer">
+                <span className="font-extrabold text-emerald-900">PNP TUNAI</span>
+                <span className="text-sm font-bold text-slate-700">{subtotalHalte.subTunai} org {openJenis.tunai ? '▲ Sembunyikan' : '▼ Lihat'}</span>
+              </button>
+              {openJenis.tunai && (
+                <div className="px-3 pb-3 space-y-2">
+                  {KATEGORI_LIST.map((kat) => (
+                    <div key={`tunai-${kat.key}`} className="flex items-center justify-between gap-3">
+                      <label className="text-sm font-bold text-slate-800">{kat.label}</label>
+                      <input type="number" min={0} placeholder="0" value={tunaiInputs[kat.key]} onChange={(e) => updateKategoriInput('tunai', kat.key, e.target.value)} className="w-40 px-2 py-2.5 rounded-xl border-2 border-slate-700 bg-white font-mono-num font-extrabold text-center text-lg text-slate-900" />
+                    </div>
+                  ))}
+                  <div className="flex justify-between pt-2 border-t border-emerald-200 text-sm font-extrabold text-emerald-950"><span>Subtotal TUNAI:</span><span className="font-mono-num">{subtotalHalte.subTunai} org</span></div>
                 </div>
-              ))}
+              )}
             </div>
 
-            <div className="grid grid-cols-3 gap-2 pt-2">
-              <div>
-                <label className="block text-xs font-extrabold text-slate-700 mb-1">Pnp Turun</label>
-                <input
-                  type="number"
-                  min={0}
-                  placeholder="0"
-                  value={turunHalte}
-                  onChange={(e) => setTurunHalte(e.target.value)}
-                  className="w-full px-2 py-3 rounded-xl border-2 border-slate-800 bg-rose-50 font-mono-num font-bold text-center text-lg"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-extrabold text-slate-700 mb-1">Pnp Transit</label>
-                <input
-                  type="number"
-                  min={0}
-                  placeholder="0"
-                  value={transitHalte}
-                  onChange={(e) => setTransitHalte(e.target.value)}
-                  className="w-full px-2 py-3 rounded-xl border-2 border-slate-800 bg-amber-50 font-mono-num font-bold text-center text-lg"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-extrabold text-slate-700 mb-1">Pnp PPT</label>
-                <input
-                  type="number"
-                  min={0}
-                  placeholder="0"
-                  value={pptHalte}
-                  onChange={(e) => setPptHalte(e.target.value)}
-                  className="w-full px-2 py-3 rounded-xl border-2 border-slate-800 bg-sky-50 font-mono-num font-bold text-center text-lg"
-                />
-              </div>
+            {/* PNP NON-TUNAI */}
+            <div className="rounded-2xl border-2 border-violet-200 bg-violet-50 overflow-hidden">
+              <button type="button" onClick={() => toggleJenis('nonTunai')} className="w-full flex justify-between items-center px-3 py-3 cursor-pointer">
+                <span className="font-extrabold text-violet-900">PNP NON-TUNAI</span>
+                <span className="text-sm font-bold text-slate-700">{subtotalHalte.subNonTunai} org {openJenis.nonTunai ? '▲ Sembunyikan' : '▼ Lihat'}</span>
+              </button>
+              {openJenis.nonTunai && (
+                <div className="px-3 pb-3 space-y-2">
+                  {KATEGORI_LIST.map((kat) => (
+                    <div key={`nt-${kat.key}`} className="flex items-center justify-between gap-3">
+                      <label className="text-sm font-bold text-slate-800">{kat.label}</label>
+                      <input type="number" min={0} placeholder="0" value={nonTunaiInputs[kat.key]} onChange={(e) => updateKategoriInput('nonTunai', kat.key, e.target.value)} className="w-40 px-2 py-2.5 rounded-xl border-2 border-slate-700 bg-white font-mono-num font-extrabold text-center text-lg text-slate-900" />
+                    </div>
+                  ))}
+                  <div className="flex justify-between pt-2 border-t border-violet-200 text-sm font-extrabold text-violet-950"><span>Subtotal NON-TUNAI:</span><span className="font-mono-num">{subtotalHalte.subNonTunai} org</span></div>
+                </div>
+              )}
+            </div>
+
+            {/* PNP MANUAL */}
+            <div className="rounded-2xl border-2 border-amber-200 bg-amber-50 overflow-hidden">
+              <button type="button" onClick={() => toggleJenis('manual')} className="w-full flex justify-between items-center px-3 py-3 cursor-pointer">
+                <span className="font-extrabold text-amber-900">PNP MANUAL</span>
+                <span className="text-sm font-bold text-slate-700">{subtotalHalte.subManual} org {openJenis.manual ? '▲ Sembunyikan' : '▼ Lihat'}</span>
+              </button>
+              {openJenis.manual && (
+                <div className="px-3 pb-3 space-y-2">
+                  {KATEGORI_LIST.map((kat) => (
+                    <div key={`man-${kat.key}`} className="flex items-center justify-between gap-3">
+                      <label className="text-sm font-bold text-slate-800">{kat.label}</label>
+                      <input type="number" min={0} placeholder="0" value={manualInputs[kat.key]} onChange={(e) => updateKategoriInput('manual', kat.key, e.target.value)} className="w-40 px-2 py-2.5 rounded-xl border-2 border-slate-700 bg-white font-mono-num font-extrabold text-center text-lg text-slate-900" />
+                    </div>
+                  ))}
+                  <div className="flex justify-between pt-2 border-t border-amber-200 text-sm font-extrabold text-amber-950"><span>Subtotal MANUAL:</span><span className="font-mono-num">{subtotalHalte.subManual} org</span></div>
+                </div>
+              )}
+            </div>
+
+            {/* PNP PPT */}
+            <div className="rounded-2xl border-2 border-sky-200 bg-sky-50 overflow-hidden">
+              <button type="button" onClick={() => toggleJenis('ppt')} className="w-full flex justify-between items-center px-3 py-3 cursor-pointer">
+                <span className="font-extrabold text-sky-900">PNP PPT</span>
+                <span className="text-sm font-bold text-slate-700">{subtotalHalte.subPPT} org {openJenis.ppt ? '▲ Sembunyikan' : '▼ Lihat'}</span>
+              </button>
+              {openJenis.ppt && (
+                <div className="px-3 pb-3 space-y-2">
+                  {KATEGORI_LIST.map((kat) => (
+                    <div key={`ppt-${kat.key}`} className="flex items-center justify-between gap-3">
+                      <label className="text-sm font-bold text-slate-800">{kat.label}</label>
+                      <input type="number" min={0} placeholder="0" value={pptInputs[kat.key]} onChange={(e) => updateKategoriInput('ppt', kat.key, e.target.value)} className="w-40 px-2 py-2.5 rounded-xl border-2 border-slate-700 bg-white font-mono-num font-extrabold text-center text-lg text-slate-900" />
+                    </div>
+                  ))}
+                  <div className="flex justify-between pt-2 border-t border-sky-200 text-sm font-extrabold text-sky-950"><span>Subtotal PPT:</span><span className="font-mono-num">{subtotalHalte.subPPT} org</span></div>
+                </div>
+              )}
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs font-extrabold text-blue-950 space-y-1">
+              <div className="flex justify-between"><span>Subtotal Tunai Halte Ini:</span><span className="font-mono-num">{subtotalHalte.subTunai} org</span></div>
+              <div className="flex justify-between"><span>Subtotal Non-Tunai Halte Ini:</span><span className="font-mono-num">{subtotalHalte.subNonTunai} org</span></div>
+              <div className="flex justify-between"><span>Subtotal Manual Halte Ini:</span><span className="font-mono-num">{subtotalHalte.subManual} org</span></div>
+              <div className="flex justify-between"><span>Subtotal PPT Halte Ini:</span><span className="font-mono-num">{subtotalHalte.subPPT} org</span></div>
+              <div className="flex justify-between pt-1 border-t border-blue-200 text-sm text-red-700"><span>Total Naik Halte Ini:</span><span className="font-mono-num">{subtotalHalte.total} org</span></div>
+              <div className="flex justify-between text-sm text-sky-800"><span>Total PPT Halte Ini:</span><span className="font-mono-num">{subtotalHalte.totalPPT} org</span></div>
+            </div>
+          </div>
+
+          {/* Pnp Turun + Transit (PPT sekarang dari blok PNP PPT di atas, bukan kotak terpisah) */}
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
+            <div>
+              <label className="block text-xs font-extrabold text-slate-700 mb-1">Pnp Turun</label>
+              <input type="number" min={0} placeholder="0" value={turunHalte} onChange={(e) => setTurunHalte(e.target.value)} className="w-full px-2 sm:px-3 py-3 rounded-xl border-2 border-slate-800 bg-rose-50 font-mono-num font-bold text-center text-lg" />
+            </div>
+            <div>
+              <label className="block text-xs font-extrabold text-slate-700 mb-1">Pnp Transit</label>
+              <input type="number" min={0} placeholder="0" value={transitHalte} onChange={(e) => setTransitHalte(e.target.value)} className="w-full px-2 sm:px-3 py-3 rounded-xl border-2 border-slate-800 bg-amber-50 font-mono-num font-bold text-center text-lg" />
             </div>
           </div>
 
@@ -1007,6 +1087,46 @@ export function PramujasaScreen({
                     </span>
                   </div>
                 ))}
+              </div>
+            </div>
+
+            <div>
+              <div className="text-xs font-extrabold text-emerald-800 mb-1.5">
+                Rincian Pnp Manual (Tersimpan: {manualPptTersimpan.manual})
+              </div>
+              <div className="grid grid-cols-2 gap-1.5">
+                {KATEGORI_LIST.map((k) => {
+                  let v = 0;
+                  for (const d of riwayat) {
+                    if (!d || d.idPerjalanan !== idPerjalanan) continue;
+                    v += Math.max(0, (d as unknown as { manual?: KategoriCounts }).manual?.[k.key] || 0);
+                  }
+                  return (
+                    <div key={`man-${k.key}`} className="bg-white border border-emerald-200 rounded-lg px-2.5 py-1.5 flex justify-between items-center text-xs font-bold">
+                      <span>{k.label}</span><span className="font-mono-num font-extrabold">{v}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <div className="text-xs font-extrabold text-emerald-800 mb-1.5">
+                Rincian Pnp PPT (Tersimpan: {manualPptTersimpan.ppt})
+              </div>
+              <div className="grid grid-cols-2 gap-1.5">
+                {KATEGORI_LIST.map((k) => {
+                  let v = 0;
+                  for (const d of riwayat) {
+                    if (!d || d.idPerjalanan !== idPerjalanan) continue;
+                    v += Math.max(0, (d as unknown as { pptCounts?: KategoriCounts }).pptCounts?.[k.key] || 0);
+                  }
+                  return (
+                    <div key={`ppt-${k.key}`} className="bg-white border border-emerald-200 rounded-lg px-2.5 py-1.5 flex justify-between items-center text-xs font-bold">
+                      <span>{k.label}</span><span className="font-mono-num font-extrabold">{v}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -1082,14 +1202,13 @@ export function PramujasaScreen({
                               {d.namaPramudi ? ` · Pramudi: ${d.namaPramudi}` : ''}
                             </div>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => handleHapusSementarItem(d.idDetail)}
-                            className="text-red-600 hover:text-red-800 p-1 cursor-pointer"
-                            title="Hapus baris"
+                          <span
+                            className={`font-extrabold ${
+                              d.status === 'GAGAL_KIRIM' ? 'text-red-700' : 'text-amber-700'
+                            }`}
                           >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                            {d.status}
+                          </span>
                         </div>
 
                         <div className="grid grid-cols-2 gap-2 bg-slate-50 rounded-lg p-2 border border-slate-200">
@@ -1115,9 +1234,21 @@ export function PramujasaScreen({
                           </div>
                         </div>
 
-                        <div className="text-slate-600 font-medium">
-                          Turun: {d.penumpangTurun || 0} · Transit: {d.penumpangTransit || 0} · PPT:{' '}
-                          {d.penumpangPPT || 0} {d.keterangan ? `· Ket: ${d.keterangan}` : ''}
+                        <div className="flex justify-between items-center pt-0.5">
+                          <span className="font-bold text-slate-700">
+                            Total Naik: <b>{norm.totalHalte}</b> org · Turun:{' '}
+                            <b>{d.penumpangTurun}</b> org · Transit:{' '}
+                            <b>{d.penumpangTransit || 0}</b> org · PPT:{' '}
+                            <b>{d.penumpangPPT || 0}</b> org
+                            {d.keterangan && d.keterangan !== '-' ? ` · Ket: ${d.keterangan}` : ''}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleHapusDraft(d.idDetail)}
+                            className="inline-flex items-center gap-1 font-bold text-red-600 hover:underline cursor-pointer shrink-0"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" /> Hapus
+                          </button>
                         </div>
                       </div>
                     );
@@ -1130,79 +1261,216 @@ export function PramujasaScreen({
               type="button"
               disabled={sending}
               onClick={() => void handleValidasiKirim()}
-              className="w-full py-4 rounded-2xl font-extrabold text-lg text-white bg-[#004080] hover:bg-blue-950 disabled:cursor-not-allowed cursor-pointer shadow-lg"
+              className={`w-full py-4 rounded-2xl text-white font-extrabold text-lg cursor-pointer disabled:opacity-60 ${
+                sudahTersimpan
+                  ? 'bg-red-700 hover:bg-red-800'
+                  : 'bg-emerald-600 hover:bg-emerald-700'
+              }`}
             >
-              {sending ? 'MENGIRIM...' : 'VALIDASI & KIRIM KE DATABASE'}
+              {sending
+                ? 'MENGIRIM KE DATABASE...'
+                : sudahTersimpan
+                ? 'ID_PERJALANAN SUDAH ADA'
+                : `VALIDASI & KIRIM (${unsentCountRit} Draft${subtotalHalte.total > 0 || Number(turunHalte) > 0 || Number(transitHalte) > 0 || Number(pptHalte) > 0 ? ' + Halte Ini' : ''})`}
             </button>
+
+            {/* LMB — di antara VALIDASI & KIRIM dan BARANG TERTINGGAL */}
+            <button
+              type="button"
+              onClick={() => setShowLMB((v) => !v)}
+              className="w-full py-4 rounded-2xl font-extrabold text-lg text-white bg-indigo-600 hover:bg-indigo-700 cursor-pointer shadow-lg"
+            >
+              {showLMB ? '▲ Sembunyikan LMB (Lembar Muatan Bus)' : '🧾 Lihat LMB (Lembar Muatan Bus)'}
+            </button>
+
+            {showLMB && (
+              <div className="bg-white border-2 border-indigo-300 rounded-2xl p-4 space-y-2.5">
+                <div className="text-center font-extrabold text-indigo-950 text-sm">LEMBAR MUATAN BUS (LMB)</div>
+                <div className="text-center text-xs font-bold text-slate-600">{idPerjalanan} · {lb} | {rit} · {tanggal}</div>
+                {transaksiSementaraPerHalte.length === 0 && riwayat.filter((d) => d && d.idPerjalanan === idPerjalanan && d.status === 'TERVALIDASI').length === 0 ? (
+                  <p className="text-center text-sm text-slate-500 py-3 font-medium">Belum ada halte untuk rit ini. Simpan sementara dulu 1 halte.</p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {[...riwayat].filter((d) => d && d.idPerjalanan === idPerjalanan).reverse().map((d, idx) => {
+                      const norm = normalizePramRecord(d);
+                      const man = (d as unknown as { manual?: KategoriCounts }).manual;
+                      const pptC = (d as unknown as { pptCounts?: KategoriCounts }).pptCounts;
+                      const manTotal = man ? KATEGORI_LIST.reduce((a, k) => a + (man[k.key] || 0), 0) : 0;
+                      const pptTotal = pptC ? KATEGORI_LIST.reduce((a, k) => a + (pptC[k.key] || 0), 0) : (d.penumpangPPT || 0);
+                      return (
+                        <div key={d.idDetail} className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 flex justify-between items-center text-xs font-bold">
+                          <span>{idx + 1}. {d.namaHalte}</span>
+                          <span className="font-mono-num">Tunai {norm.totalTunai} · Non-Tunai {norm.totalNonTunai} · Manual {manTotal} · PPT {pptTotal} · Turun {d.penumpangTurun || 0}</span>
+                        </div>
+                      );
+                    })}
+                    <div className="bg-indigo-100 border-2 border-indigo-400 rounded-xl p-2.5 text-center font-extrabold text-indigo-950 text-sm">
+                      Total Naik Rit: {ringkasRitTersimpan.totalRit + manualPptTersimpan.manual} org · PPT: {ringkasRitTersimpan.totalPPTRit || manualPptTersimpan.ppt} org
+                    </div>
+                  </div>
+                )}
+                <button type="button" onClick={() => window.print()} className="w-full py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-sm cursor-pointer">🖨️ CETAK LMB</button>
+              </div>
+            )}
+
+            {/* BARANG TERTINGGAL — dikembalikan, tepat sesudah LMB */}
+            <button
+              type="button"
+              onClick={onOpenLostFound}
+              className="w-full py-4 rounded-2xl bg-violet-600 hover:bg-violet-700 text-white font-extrabold text-lg flex items-center justify-center gap-2 cursor-pointer shadow-lg"
+            >
+              <PackageSearch className="w-5 h-5" /> BARANG TERTINGGAL
+            </button>
+
+            {/* LIHAT TRANSAKSI PER SHIFT - di antara VALIDASI & KIRIM dan BARANG TERTINGGAL */}
+            <button
+              type="button"
+              onClick={() => setShowRekapShift((v) => !v)}
+              className="w-full py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-base flex items-center justify-center gap-2 cursor-pointer"
+            >
+              {showRekapShift ? '▲ Sembunyikan Transaksi Per Shift' : '👁️ Lihat Transaksi Per Shift'}
+            </button>
+
+            {showRekapShift && (
+              <div className="bg-indigo-50 border-2 border-indigo-300 rounded-2xl p-4 space-y-3">
+                <div className="text-center font-extrabold text-indigo-950 text-sm">
+                  REKAP {shift} - {lb} ({koridor}) - {tanggal}
+                </div>
+                <div className="text-center text-xs font-bold text-indigo-900">
+                  Rit sudah jalan: {rekapShift.jumlahRitJalan} rit
+                  {rekapShift.perRit.length > 0 ? ` (${rekapShift.perRit.map((r) => r.rit).join(', ')})` : ' - belum ada rit tersimpan'}
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-center">
+                  <div className="bg-white border border-indigo-200 rounded-xl p-2.5">
+                    <div className="text-[11px] font-bold text-slate-500">TOTAL NAIK</div>
+                    <div className="font-mono-num font-extrabold text-lg">{rekapShift.totalNaik} org</div>
+                    <div className="text-[11px] font-bold text-slate-600">Tunai {rekapShift.totalTunai} · Non-Tunai {rekapShift.totalNonTunai}</div>
+                  </div>
+                  <div className="bg-white border border-indigo-200 rounded-xl p-2.5">
+                    <div className="text-[11px] font-bold text-slate-500">TOTAL TURUN</div>
+                    <div className="font-mono-num font-extrabold text-lg">{rekapShift.totalTurun} org</div>
+                    <div className="text-[11px] font-bold text-slate-600">{rekapShift.list.length} halte tercatat</div>
+                  </div>
+                  <div className="bg-white border border-indigo-200 rounded-xl p-2.5">
+                    <div className="text-[11px] font-bold text-slate-500">TOTAL TRANSIT</div>
+                    <div className="font-mono-num font-extrabold text-lg">{rekapShift.totalTransit} org</div>
+                    <div className="text-[11px] font-bold text-slate-600">{rekapShift.list.length} halte tercatat</div>
+                  </div>
+                  <div className="bg-white border border-indigo-200 rounded-xl p-2.5">
+                    <div className="text-[11px] font-bold text-slate-500">TOTAL PPT</div>
+                    <div className="font-mono-num font-extrabold text-lg">{rekapShift.totalPPT} org</div>
+                    <div className="text-[11px] font-bold text-slate-600">{rekapShift.list.length} halte tercatat</div>
+                  </div>
+                </div>
+                {rekapShift.perRit.length === 0 ? (
+                  <p className="text-center text-sm text-indigo-800/80 py-2 font-medium">
+                    Belum ada data tersimpan di shift ini. Rekap akan muncul otomatis setelah rit pertama disimpan.
+                  </p>
+                ) : (
+                  <div className="space-y-1.5">
+                    <div className="text-xs font-extrabold text-indigo-900">Rincian Per Rit:</div>
+                    {rekapShift.perRit.map((r) => (
+                      <div key={r.idPerjalanan || r.rit} className="bg-white border border-indigo-200 rounded-lg px-3 py-2 flex justify-between items-center text-xs font-bold">
+                        <span>{r.rit} <span className="text-slate-500 font-medium">({r.halte} halte)</span></span>
+                        <span className="font-mono-num">Naik {r.naik} · Turun {r.turun} · Transit {r.transit} · PPT {r.ppt}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {lastWaMsg && (
+              <>
+                <WhatsAppShareBox
+                  message={lastWaMsg}
+                  onCopied={(ok) =>
+                    showToast(
+                      ok ? 'Pesan validasi WA berhasil disalin.' : 'Gagal menyalin pesan WA.',
+                      ok ? 'ok' : 'err'
+                    )
+                  }
+                />
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  className="w-full py-3.5 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-extrabold text-base cursor-pointer"
+                >
+                  INPUT HALTE / BUS BERIKUTNYA
+                </button>
+              </>
+            )}
+
+
           </div>
 
-          {/* WHATSAPP SHARE BOX */}
-          <WhatsAppShareBox message={lastWaMsg} onCopied={() => {}} />
-
-          {/* TEKS KLIK: LIHAT RIWAYAT PRAMUJASA */}
           <div className="pt-2 text-center">
             <button
               type="button"
               onClick={() => setShowRiwayat((v) => !v)}
-              className="text-emerald-700 hover:text-emerald-950 font-extrabold underline text-sm cursor-pointer"
+              className="text-blue-600 font-extrabold underline text-sm cursor-pointer"
             >
-              {showRiwayat ? 'Sembunyikan Riwayat Tervalidasi' : 'Lihat Riwayat Tervalidasi'}
+              {showRiwayat ? 'Sembunyikan Riwayat Pramujasa' : 'Lihat Riwayat Pramujasa'}
             </button>
             <span className="ml-2 text-xs font-bold text-slate-600">
-              ({todayRiwayat.filter((d) => d && d.status === 'TERVALIDASI').length} data hari ini)
+              ({todayRiwayat.length} data hari ini)
             </span>
           </div>
 
           {showRiwayat && (
-            <div className="bg-emerald-50 border-2 border-emerald-300 rounded-2xl p-4 space-y-2.5">
-              <div className="flex justify-between items-center mb-2">
-                <span className="font-extrabold text-emerald-950 text-sm">
-                  RIWAYAT TERVALIDASI HARI INI
-                </span>
-                <span className="text-xs font-bold text-emerald-900">
-                  {todayRiwayat.filter((d) => d && d.status === 'TERVALIDASI').length} data
-                </span>
+            <div className="bg-slate-50 border-2 border-slate-200 rounded-2xl p-4 space-y-2.5">
+              <div className="flex justify-between items-center">
+                <span className="font-extrabold text-slate-900">RIWAYAT PRAMUJASA</span>
+                <span className="text-xs font-bold text-slate-600">{todayRiwayat.length} data</span>
               </div>
-
-              {todayRiwayat.filter((d) => d && d.status === 'TERVALIDASI').length === 0 ? (
-                <p className="text-center text-sm text-emerald-800/80 py-4 font-medium">
-                  Belum ada data Pramujasa tervalidasi hari ini
+              {todayRiwayat.length === 0 ? (
+                <p className="text-center text-sm text-slate-400 py-4">
+                  Belum ada data Pramujasa hari ini
                 </p>
               ) : (
-                todayRiwayat
-                  .filter((d) => d && d.status === 'TERVALIDASI')
-                  .map((d, idx) => {
-                    const norm = normalizePramRecord(d);
-                    return (
-                      <div
-                        key={`${d.idPerjalanan}-${idx}`}
-                        className="bg-white border border-emerald-300 rounded-xl p-3 text-xs space-y-1.5"
-                      >
-                        <div className="flex justify-between items-center">
-                          <span className="font-extrabold text-emerald-900">
-                            {d.noLambung} | {d.rit} · {d.idPerjalanan}
-                          </span>
-                          <span className="font-extrabold text-emerald-700">Tervalidasi</span>
-                        </div>
-                        <div className="text-slate-600 font-semibold">
-                          Halte: {d.namaHalte} · Jam: {d.jamTiba} · Petugas: {d.petugas}
-                        </div>
-                        <div className="grid grid-cols-2 gap-2 bg-emerald-50/50 rounded-lg p-2">
-                          <div>
-                            <span className="font-bold text-emerald-900">Tunai: {norm.totalTunai} org</span>
-                          </div>
-                          <div>
-                            <span className="font-bold text-violet-900">Non-Tunai: {norm.totalNonTunai} org</span>
-                          </div>
-                        </div>
-                        {d.statusPerjalanan && d.statusPerjalanan !== 'NORMAL' && (
-                          <div className="text-xs font-bold text-amber-800">
-                            🚌 {d.statusPerjalanan} — Asal: {d.idPerjalananAsal || '-'} · Titik Ganti: {d.titikGanti || '-'}
-                          </div>
-                        )}
+                todayRiwayat.map((d) => {
+                  const norm = normalizePramRecord(d);
+                  return (
+                    <div
+                      key={d.idDetail}
+                      className="bg-white border border-slate-300 rounded-xl p-3 text-sm space-y-1"
+                    >
+                      <div className="flex justify-between items-center gap-2">
+                        <span className="font-extrabold text-slate-900">
+                          {d.noLambung} | {d.rit} - {d.namaHalte}
+                        </span>
+                        <span
+                          className={`text-xs font-extrabold ${
+                            d.status === 'TERVALIDASI'
+                              ? 'text-emerald-700'
+                              : d.status === 'GAGAL_KIRIM'
+                              ? 'text-red-700'
+                              : 'text-amber-700'
+                          }`}
+                        >
+                          {d.status}
+                        </span>
                       </div>
-                    );
-                  })
+                      <div className="text-xs font-mono-num text-slate-500">
+                        {d.idPerjalanan} · Jam {d.waktuKirim}
+                        {d.namaPramudi ? ` · Pramudi: ${d.namaPramudi}` : ''}
+                      </div>
+                      <div className="text-xs text-slate-700 font-semibold">
+                        Tunai: <b>{norm.totalTunai}</b> · Non-Tunai: <b>{norm.totalNonTunai}</b> ·
+                        Total Naik: <b>{norm.totalHalte}</b> · Turun: <b>{d.penumpangTurun}</b> · Transit: <b>{d.penumpangTransit || 0}</b> · PPT: <b>{d.penumpangPPT || 0}</b>
+                      </div>
+                      {d.status !== 'TERVALIDASI' && (
+                        <button
+                          type="button"
+                          onClick={() => handleHapusDraft(d.idDetail)}
+                          className="inline-flex items-center gap-1 text-xs font-bold text-red-600 hover:underline mt-1 cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" /> Hapus Draft Lokal
+                        </button>
+                      )}
+                    </div>
+                  );
+                })
               )}
             </div>
           )}
