@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, PackageSearch } from 'lucide-react';
-import { PpaRecord, TimerLookupData, ToastType } from '../types/anteng';
+import { MasterRitMap, PpaRecord, TimerLookupData, ToastType } from '../types/anteng';
 import {
   API_PPA,
   API_TIMER,
@@ -16,6 +16,7 @@ import {
   jamKeMenit,
   jamSekarangHHMM,
   markSavedIdPerjalanan,
+  normalKunciJS,
   pad2,
   tglHariIni,
   tulisStorage,
@@ -25,6 +26,9 @@ import { WhatsAppShareBox } from './WhatsAppShareBox';
 
 interface PpaScreenProps {
   petugasNama: string;
+  // MASTER_RIT — sumber ARAH. Dikirim dari App, sama seperti di PramujasaScreen.
+  // JANGAN ambil arah dari MASTER_JADWAL. Kunci: LB + RIT -> { arah, terminal, terminalAkhir }.
+  masterRit: MasterRitMap;
   onBackToLogin: () => void;
   onOpenLostFound: () => void;
   showToast: (msg: string, type?: ToastType) => void;
@@ -33,6 +37,7 @@ interface PpaScreenProps {
 
 export function PpaScreen({
   petugasNama,
+  masterRit,
   onBackToLogin,
   onOpenLostFound,
   showToast,
@@ -62,6 +67,57 @@ export function PpaScreen({
     () => `${koridor}-${lb}${rit}${tanggal.split('-').join('')}`,
     [koridor, lb, rit, tanggal]
   );
+
+  // ===== ARAH dari MASTER_RIT (bukan MASTER_JADWAL, bukan ketikan manual) =====
+  // Kunci persis seperti PramujasaScreen: normalKunciJS(`${lb}-${rit}`) lalu fallback `rit`.
+  const ritInfo = useMemo(() => {
+    const kunci = normalKunciJS(`${lb}-${rit}`) || `${lb}-${rit}`;
+    return masterRit?.[kunci] || masterRit?.[rit] || null;
+  }, [lb, rit, masterRit]);
+
+  // Fallback arah dari nama POS, HANYA kalau MASTER_RIT tidak ketemu.
+  // POS seperti JOMPO_BK_BP artinya BK -> BP, jadi arahnya BP (tujuan akhir).
+  // POS seperti JOMPO_BP_BK artinya BP -> BK, jadi arahnya BK.
+  const arahDariPos = useMemo(() => {
+    const up = String(pos || '').toUpperCase();
+    if (up.endsWith('_BK_BP') || up.endsWith('_BP')) return 'BP';
+    if (up.endsWith('_BP_BK') || up.endsWith('_BK')) return 'BK';
+    if (up.includes('BK_BP')) return 'BP';
+    if (up.includes('BP_BK')) return 'BK';
+    return '';
+  }, [pos]);
+
+  const arahAktif = useMemo(() => {
+    if (ritInfo?.arah === 'BP' || ritInfo?.arah === 'BK') return ritInfo.arah;
+    if (ritInfo?.terminalAkhir) {
+      const upAk = String(ritInfo.terminalAkhir).toUpperCase();
+      if (upAk.includes('BULUPITU')) return 'BP';
+      if (upAk.includes('BUKATEJA')) return 'BK';
+    }
+    return arahDariPos;
+  }, [ritInfo, arahDariPos]);
+
+  const arahKetemu = Boolean(arahAktif);
+  const arahLabel = useMemo(() => {
+    if (ritInfo?.terminal && ritInfo?.terminalAkhir) {
+      return `${arahAktif} (${ritInfo.terminal} \u2192 ${ritInfo.terminalAkhir})`;
+    }
+    if (arahAktif === 'BP') return 'BP (Arah Bulupitu)';
+    if (arahAktif === 'BK') return 'BK (Arah Bukateja)';
+    return '-';
+  }, [arahAktif, ritInfo]);
+
+  // Arah sebuah record lama (yang belum punya field arah): pakai field arah kalau ada,
+  // kalau tidak ada turunkan dari POS-nya, supaya headway lama tetap terkelompok benar.
+  const arahOfRecord = (item: PpaRecord): string => {
+    const rec = item as unknown as Record<string, unknown>;
+    const a = String(rec.arah || rec.arahPerjalanan || '').toUpperCase();
+    if (a === 'BP' || a === 'BK') return a;
+    const up = String(item.pos || '').toUpperCase();
+    if (up.endsWith('_BK_BP') || up.endsWith('_BP') || up.includes('BK_BP')) return 'BP';
+    if (up.endsWith('_BP_BK') || up.endsWith('_BK') || up.includes('BP_BK')) return 'BK';
+    return '';
+  };
 
   // Ambil data Timer saat armada/rit berubah
   useEffect(() => {
@@ -121,22 +177,31 @@ export function PpaScreen({
     );
   }, [jamTiba, timerData]);
 
-  const waktuTempuh = useMemo(() => {
-    if (!timerData?.aktual || !jamTiba) return '-';
-    const diff = hitungSelisihMenit(timerData.aktual, jamTiba);
-    return diff !== null ? `${diff} menit` : '-';
+  // Waktu Tempuh (tampil): JAM TIBA POS - JAM BERANGKAT AKTUAL (Timer).
+  // Per baris, tidak peduli POS lain / arah lain. Versi angka murni disimpan di waktuTempuhMenit.
+  const waktuTempuhMenit = useMemo(() => {
+    if (!timerData?.aktual || !jamTiba) return null;
+    return hitungSelisihMenit(timerData.aktual, jamTiba);
   }, [timerData, jamTiba]);
 
-  const headwayPos = useMemo(() => {
+  const waktuTempuh = useMemo(() => {
+    return waktuTempuhMenit !== null ? `${waktuTempuhMenit} menit` : '-';
+  }, [waktuTempuhMenit]);
+
+  // Headway (tampil, preview dari HP): HANYA dalam grup TANGGAL + POS + ARAH.
+  // Ini preview supaya petugas langsung lihat. Angka resmi dihitung ulang di code.gs
+  // dari seluruh Sheet, supaya benar antar HP. Bus pertama di grupnya -> BUS PERTAMA.
+  const headwayInfo = useMemo(() => {
     const mSekarang = jamKeMenit(jamTiba);
     let busDepan: PpaRecord | null = null;
     let mTerdekat = -1;
-
     for (const item of riwayat) {
       if (
         item &&
         item.tanggal === tanggal &&
         item.pos === pos &&
+        arahOfRecord(item) === arahAktif &&
+        arahAktif !== '' &&
         item.idPerjalanan !== idPerjalanan &&
         item.status !== 'GAGAL_KIRIM' &&
         item.jamTiba
@@ -150,12 +215,17 @@ export function PpaScreen({
         }
       }
     }
-
-    if (!busDepan) return 'BUS PERTAMA';
+    if (!busDepan) return { menit: null as number | null, teks: 'BUS PERTAMA', busDepan: null as PpaRecord | null };
     const selisih = hitungSelisihMenit(busDepan.jamTiba, jamTiba);
-    if (selisih === null) return 'BUS PERTAMA';
-    return `${selisih} menit (dari ${busDepan.noLambung} ${busDepan.rit} jam ${busDepan.jamTiba})`;
-  }, [riwayat, tanggal, pos, idPerjalanan, jamTiba]);
+    if (selisih === null) return { menit: null, teks: 'BUS PERTAMA', busDepan: null };
+    return {
+      menit: selisih,
+      teks: `${selisih} menit (dari ${busDepan.noLambung} ${busDepan.rit} jam ${busDepan.jamTiba})`,
+      busDepan,
+    };
+  }, [riwayat, tanggal, pos, arahAktif, idPerjalanan, jamTiba]);
+
+  const headwayPos = headwayInfo.teks;
 
   useEffect(() => {
     for (const r of riwayat) {
@@ -165,21 +235,38 @@ export function PpaScreen({
     }
   }, [riwayat]);
 
+  // ===== DUPLIKAT: kunci = ID_PERJALANAN + POS + ARAH (bukan ID saja) =====
+  // 1 bus yang sama BOLEH dicatat di POS berbeda dan di arah berbeda (itu baris beda).
+  // 1 bus di POS + ARAH yang sama persis TIDAK BOLEH double.
+  // Catatan: markSavedIdPerjalanan lama hanya kunci ID, jadi untuk keamanan ganda
+  // cek riwayat (ID+POS+ARAH) dipakai sebagai penentu utama di handleSimpan.
+  const kunciDuplikat = `${idPerjalanan}|${pos}|${arahAktif}`;
   const existingValidRecord = useMemo(
     () =>
       Boolean(
-        riwayat.find((r) => r.idPerjalanan === idPerjalanan && r.status !== 'GAGAL_KIRIM') ||
-          hasSavedIdPerjalanan(IDS_PPA_KEY, idPerjalanan)
+        riwayat.find(
+          (r) =>
+            r.idPerjalanan === idPerjalanan &&
+            r.pos === pos &&
+            arahOfRecord(r) === arahAktif &&
+            arahAktif !== '' &&
+            r.status !== 'GAGAL_KIRIM'
+        )
       ),
-    [riwayat, idPerjalanan]
+    [riwayat, idPerjalanan, pos, arahAktif]
   );
 
   const existingFailedRecord = useMemo(
     () =>
       riwayat.find(
-        (r) => r.idPerjalanan === idPerjalanan && r.status === 'GAGAL_KIRIM'
+        (r) =>
+          r.idPerjalanan === idPerjalanan &&
+          r.pos === pos &&
+          arahOfRecord(r) === arahAktif &&
+          arahAktif !== '' &&
+          r.status === 'GAGAL_KIRIM'
       ),
-    [riwayat, idPerjalanan]
+    [riwayat, idPerjalanan, pos, arahAktif]
   );
 
   const todayRiwayat = useMemo(
@@ -188,7 +275,7 @@ export function PpaScreen({
   );
 
   const buildWaPpa = (pl: PpaRecord) =>
-    `✅ *TEMAN ANTENG - VALIDASI PPA*\n` +
+    `\u2705 *TEMAN ANTENG - VALIDASI PPA*\n` +
     `ID_PERJALANAN: ${pl.idPerjalanan}\n` +
     `Koridor: ${pl.koridor}\n` +
     `Pola: ${pl.polaOperasional}\n` +
@@ -196,6 +283,7 @@ export function PpaScreen({
     `Petugas PPA: ${pl.petugas}\n` +
     `Bus: ${pl.noLambung} | Rit: ${pl.rit}\n` +
     `POS: ${pl.pos}\n` +
+    `Arah: ${(pl as unknown as Record<string, unknown>).arah || '-'}\n` +
     `JAM BERANGKAT AKTUAL (Timer): ${pl.aktual}\n` +
     `Jam Tiba di POS: ${pl.jamTiba}\n` +
     `Waktu Tempuh ke POS: ${pl.waktuTempuhKePos}\n` +
@@ -205,9 +293,19 @@ export function PpaScreen({
     `Status: ${pl.status}`;
 
   const kirimKeServer = async (pl: PpaRecord) => {
+    // Penjaga ke-2 (untuk tombol KIRIM ULANG di riwayat): kalau Timer untuk
+    // ID ini sekarang tidak ada, jangan kirim ulang.
+    if (loadingTimer || !timerData || timerErr) {
+      showToast('DITOLAK: DATA TIMER BELUM ADA untuk ID ini. Minta Timer kirim dulu.', 'err');
+      return;
+    }
     setSending(true);
     setGlobalLoading(true);
     try {
+      // Payload dikirim apa adanya (seperti sebelumnya) supaya code.gs PPA lama tetap jalan.
+      // code.gs PPA BARU membaca: arah (string), waktuTempuhMenit (angka),
+      // headwayMenit (angka, null = BUS PERTAMA), lalu menghitung ulang headway
+      // dari Sheet per grup TANGGAL+POS+ARAH dan menolak duplikat ID+POS+ARAH.
       await fetch(API_PPA, {
         method: 'POST',
         mode: 'no-cors',
@@ -216,7 +314,12 @@ export function PpaScreen({
       });
 
       const current = bacaStorage<PpaRecord>(STORAGE_PPA_KEY).filter(
-        (r) => r.idPerjalanan !== pl.idPerjalanan
+        (r) =>
+          !(
+            r.idPerjalanan === pl.idPerjalanan &&
+            r.pos === pl.pos &&
+            arahOfRecord(r) === arahAktif
+          )
       );
       const saved: PpaRecord = { ...pl, status: 'Tervalidasi' };
       const updated = [saved, ...current];
@@ -227,7 +330,12 @@ export function PpaScreen({
       showToast('Validasi PPA berhasil dikirim ke database!', 'ok');
     } catch {
       const current = bacaStorage<PpaRecord>(STORAGE_PPA_KEY).filter(
-        (r) => r.idPerjalanan !== pl.idPerjalanan
+        (r) =>
+          !(
+            r.idPerjalanan === pl.idPerjalanan &&
+            r.pos === pl.pos &&
+            arahOfRecord(r) === arahAktif
+          )
       );
       const failed: PpaRecord = { ...pl, status: 'GAGAL_KIRIM' };
       const updated = [failed, ...current];
@@ -240,14 +348,39 @@ export function PpaScreen({
     }
   };
 
+  // KUNCI TIMER: PPA TIDAK BOLEH simpan kalau Timer belum ada.
+  // Ini cek di HP (frontend). Server PPA juga menolak (lihat code_PPA_TOLAK_TANPA_TIMER.txt).
+  const timerBelumAda = !timerData || timerErr;
   const handleSimpan = async () => {
     if (sending) return;
+    // 1) Timer masih loading -> jangan simpan dulu, tunggu hasil cek Timer.
+    if (loadingTimer) {
+      showToast('Tunggu... masih cek Data Timer untuk ID ini.', 'warn');
+      return;
+    }
+    // 2) Timer TIDAK ADA / GAGAL dibaca -> TOLAK SIMPAN. Data tidak masuk
+    // lokal maupun server, supaya salah pencet LB/RIT tidak jadi data sampah.
+    if (timerBelumAda) {
+      showToast('DITOLAK: DATA TIMER BELUM ADA untuk ID ini. Minta Timer kirim dulu.', 'err');
+      return;
+    }
+    // Duplikat: ID + POS + ARAH. Cek riwayat lokal (kunci lengkap).
     const freshRiw = bacaStorage<PpaRecord>(STORAGE_PPA_KEY);
     if (
-      freshRiw.some((r) => r.idPerjalanan === idPerjalanan && r.status !== 'GAGAL_KIRIM') ||
-      hasSavedIdPerjalanan(IDS_PPA_KEY, idPerjalanan)
+      freshRiw.some(
+        (r) =>
+          r.idPerjalanan === idPerjalanan &&
+          r.pos === pos &&
+          arahOfRecord(r) === arahAktif &&
+          arahAktif !== '' &&
+          r.status !== 'GAGAL_KIRIM'
+      )
     ) {
-      showToast('ID_PERJALANAN SUDAH ADA', 'err');
+      showToast('ID_PERJALANAN + POS + ARAH SUDAH ADA', 'err');
+      return;
+    }
+    if (!arahKetemu) {
+      showToast('ARAH tidak ketemu di MASTER_RIT untuk LB + RIT ini. Cek LB / RIT.', 'warn');
       return;
     }
     if (jamInvalid) {
@@ -268,12 +401,16 @@ export function PpaScreen({
       idPerjalanan,
       pos,
       posPPA: pos,
+      arah: arahAktif,
+      arahPerjalanan: arahAktif,
       jamTiba,
       jamTibaPos: jamTiba,
       aktual: jamAktualTimer,
       jamBerangkatAktual: jamAktualTimer,
       waktuTempuhKePos: waktuTempuh,
+      waktuTempuhMenit: waktuTempuhMenit,
       headwayPos,
+      headwayMenit: headwayInfo.menit,
       all: allN,
       allPnp: allN,
       naik: naikN,
@@ -289,7 +426,7 @@ export function PpaScreen({
       rit,
       polaOperasional: polaVal,
       status: 'Tervalidasi',
-    };
+    } as PpaRecord;
 
     await kirimKeServer(pl);
   };
@@ -422,8 +559,20 @@ export function PpaScreen({
             />
             {existingValidRecord && (
               <div className="mt-2 rounded-xl border-2 border-red-300 bg-red-50 px-3 py-2 text-center text-xs font-extrabold text-red-800">
-                ID_PERJALANAN SUDAH ADA ({idPerjalanan})
+                ID + POS + ARAH SUDAH ADA ({idPerjalanan} | {pos} | {arahAktif})
               </div>
+            )}
+          </div>
+
+          {/* ARAH dari MASTER_RIT — tampil, tidak bisa diketik */}
+          <div className={`rounded-2xl border-2 p-3.5 text-sm ${arahKetemu ? 'bg-violet-50 border-violet-200 text-slate-800' : 'bg-red-50 border-red-200 text-red-900'}`}>
+            <p className="font-extrabold">ARAH (MASTER_RIT)</p>
+            <p className="font-extrabold text-base">{arahLabel}</p>
+            {!arahKetemu && (
+              <p className="text-xs mt-1">ARAH tidak ketemu di MASTER_RIT untuk {lb} + {rit}. Cek LB / RIT atau isi MASTER_RIT.</p>
+            )}
+            {ritInfo && !ritInfo.arah && (
+              <p className="text-xs mt-1">MASTER_RIT ketemu tapi kolom arah kosong — arah diambil dari nama POS sebagai fallback.</p>
             )}
           </div>
 
@@ -521,10 +670,16 @@ export function PpaScreen({
 
           <div className="rounded-2xl border-2 border-emerald-200 bg-emerald-50 p-3.5 text-sm space-y-1">
             <div>
+              <b>Arah:</b> {arahLabel}
+            </div>
+            <div>
               <b>Waktu Tempuh ke POS:</b> {waktuTempuh}
             </div>
             <div>
-              <b>Headway dengan Bus Depan:</b> {headwayPos}
+              <b>Headway dengan Bus Depan (grup Tanggal + POS + Arah):</b> {headwayPos}
+            </div>
+            <div className="text-xs text-slate-600">
+              Headway resmi dihitung ulang di server dari seluruh Sheet — angka di sini preview dari HP ini.
             </div>
           </div>
 
@@ -546,20 +701,24 @@ export function PpaScreen({
           <div className="space-y-2.5 pt-2">
             <button
               type="button"
-              disabled={sending}
+              disabled={sending || loadingTimer || timerBelumAda}
               onClick={() => void handleSimpan()}
               className={`w-full py-4 rounded-2xl font-extrabold text-lg text-white cursor-pointer disabled:cursor-not-allowed ${
                 existingValidRecord
                   ? 'bg-red-700 hover:bg-red-800'
-                  : jamInvalid
+                  : timerBelumAda || jamInvalid || !arahKetemu
                   ? 'bg-red-400'
                   : 'bg-[#004080] hover:bg-blue-950'
               }`}
             >
               {sending
                 ? 'MENGIRIM VALIDASI...'
+                : loadingTimer
+                ? 'CEK DATA TIMER...'
+                : timerBelumAda
+                ? 'DATA TIMER BELUM ADA — TIDAK BISA SIMPAN'
                 : existingValidRecord
-                ? 'ID_PERJALANAN SUDAH ADA'
+                ? 'ID + POS + ARAH SUDAH ADA'
                 : existingFailedRecord
                 ? 'KIRIM ULANG VALIDASI PPA'
                 : 'SIMPAN DAN KIRIM VALIDASI'}
@@ -621,12 +780,12 @@ export function PpaScreen({
               ) : (
                 todayRiwayat.map((d, idx) => (
                   <div
-                    key={`${d.idPerjalanan}-${d.pos}-${idx}`}
+                    key={`${d.idPerjalanan}-${d.pos}-${arahOfRecord(d)}-${idx}`}
                     className="bg-white border border-slate-300 rounded-xl p-3 text-sm space-y-1"
                   >
                     <div className="flex justify-between items-center gap-2">
                       <span className="font-extrabold text-slate-900">
-                        {d.noLambung} | {d.rit} ({d.pos})
+                        {d.noLambung} | {d.rit} ({d.pos} | {arahOfRecord(d) || '-'})
                       </span>
                       <span
                         className={`text-xs font-extrabold ${
