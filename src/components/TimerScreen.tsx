@@ -28,26 +28,16 @@ import type { MasterJadwalMap, MasterRitMap } from '../types/anteng';
 
 type TimerRecord = Record<string, unknown>;
 
-export function TimerScreen(props: {
+export default function TimerScreen(props: {
+  onBack: () => void;
+  onOpenLostFound?: () => void;
   petugasNama: string;
   masterJadwal: MasterJadwalMap;
   masterRit: MasterRitMap;
-  onReloadMaster: () => Promise<void>;
-  onBackToLogin: () => void;
-  onOpenLostFound: () => void;
   showToast: (msg: string, type: 'ok' | 'err' | 'warn') => void;
   setGlobalLoading: (v: boolean) => void;
 }) {
-  const {
-    petugasNama,
-    masterJadwal,
-    masterRit,
-    onReloadMaster: _onReloadMaster,
-    onBackToLogin,
-    onOpenLostFound: _onOpenLostFound,
-    showToast,
-    setGlobalLoading,
-  } = props;
+  const { onBack, onOpenLostFound, petugasNama, masterJadwal, masterRit, showToast, setGlobalLoading } = props;
   const [tanggal, setTanggal] = useState(tglHariIni());
   const [koridor, setKoridor] = useState('KOR01');
   const [lb, setLb] = useState('LB01');
@@ -59,7 +49,7 @@ export function TimerScreen(props: {
   const [titikGanti, setTitikGanti] = useState('TERMINAL_AWAL');
   const [halteTitikGanti, setHalteTitikGanti] = useState('');
   const isCadangan = lb === 'LBC01';
-  const tampilPanelCadangan = isCadangan || statusPerjalanan === 'LANJUTAN_SETELAH_PERBAIKAN';
+  const tampilPanelCadangan = isCadangan; // panel HANYA kalau LB = LBC01 — jangan ikut status, biar tidak nyangkut saat LB diganti
   const statusPerjalananEfektif = tampilPanelCadangan ? statusPerjalanan : 'NORMAL';
   const [jadwal, setJadwal] = useState('');
   const [aktual, setAktual] = useState(jamSekarangHHMM());
@@ -77,7 +67,7 @@ export function TimerScreen(props: {
   const idPerjalanan = useMemo(
     () =>
       isCadangan && idPerjalananAsal.trim()
-        ? `${koridor}-LBC01${rit}${tanggal.split('-').join('')}-GANTI-${idPerjalananAsal.trim()}`
+        ? `${koridor}-LBC01${rit}${tanggal.split('-').join('')}-GANTI-${idPerjalananAsal.trim().toUpperCase()}`
         : `${koridor}-${lb}${rit}${tanggal.split('-').join('')}`,
     [koridor, lb, rit, tanggal, isCadangan, idPerjalananAsal]
   );
@@ -110,6 +100,10 @@ export function TimerScreen(props: {
     // Validasi panel cadangan LBC01 — penambahan saja
     if (isCadangan && !idPerjalananAsal.trim()) {
       showToast('Isi dulu Bus yang diganti (ID Perjalanan Asal) untuk LBC01.', 'warn');
+      return;
+    }
+    if (isCadangan && titikGanti === 'TENGAH_JALAN' && !halteTitikGanti.trim()) {
+      showToast('Isi dulu Halte Titik Ganti untuk LBC01.', 'warn');
       return;
     }
     if (!jadwal || !aktual) {
@@ -145,9 +139,9 @@ export function TimerScreen(props: {
       keterangan: ket.trim() || '-',
       // ===== 4 field cadangan — penambahan saja =====
       statusPerjalanan: statusPerjalananEfektif,
-      idPerjalananAsal: tampilPanelCadangan ? idPerjalananAsal.trim() : '',
+      idPerjalananAsal: tampilPanelCadangan ? idPerjalananAsal.trim().toUpperCase() : '',
       titikGanti: tampilPanelCadangan ? titikGanti : '',
-      halteTitikGanti: tampilPanelCadangan ? halteTitikGanti : '',
+      halteTitikGanti: tampilPanelCadangan ? halteTitikGanti.trim().toUpperCase() : '',
       status: 'Terkirim',
       waktuKirim: `${pad2(now.getHours())}:${pad2(now.getMinutes())}`,
       createdAt: timestampSekarang(),
@@ -198,15 +192,13 @@ export function TimerScreen(props: {
   return (
     <div className="min-h-screen bg-slate-100 pb-10">
       <div className="max-w-xl mx-auto bg-white min-h-screen shadow-sm border-x border-slate-200 flex flex-col">
-        <div className="bg-gradient-to-br from-[#0056b3] to-[#003366] text-white p-4 flex justify-between items-start">
-          <div>
-            <button type="button" onClick={onBackToLogin} className="text-sm font-bold underline cursor-pointer">← Kembali</button>
-            <h1 className="text-xl font-extrabold mt-1">TIMER — Keberangkatan Bus</h1>
-            <p className="text-xs opacity-80">Petugas: {petugasNama} | Terminal Awal: {terminalAwal} | Arah: {arah}</p>
-          </div>
-          <button type="button" onClick={_onOpenLostFound} className="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1 shadow cursor-pointer">
-            📦 Barang Tertinggal
-          </button>
+        <div className="bg-gradient-to-br from-[#0056b3] to-[#003366] text-white p-4 relative">
+          <button type="button" onClick={onBack} className="text-sm font-bold underline cursor-pointer">← Kembali</button>
+          {onOpenLostFound && (
+            <button type="button" onClick={onOpenLostFound} className="absolute top-3 right-3 px-3 py-1.5 rounded-full bg-amber-400 hover:bg-amber-500 text-amber-950 text-xs font-extrabold cursor-pointer">🧳 Barang Tertinggal</button>
+          )}
+          <h1 className="text-xl font-extrabold mt-1">TIMER — Keberangkatan Bus</h1>
+          <p className="text-xs opacity-80">Petugas: {petugasNama} | Terminal Awal: {terminalAwal} | Arah: {arah}</p>
         </div>
         <div className="p-4 space-y-4">
           <div>
@@ -338,3 +330,7 @@ export function TimerScreen(props: {
     </div>
   );
 }
+
+// Named export untuk App.tsx: import { TimerScreen } from './TimerScreen'
+// (file ini juga tetap punya default export, jadi 2 cara import jalan)
+export { TimerScreen };
