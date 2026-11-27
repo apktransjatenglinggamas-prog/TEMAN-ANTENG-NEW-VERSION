@@ -53,7 +53,7 @@ import { BrandLogo } from './BrandLogo';
 // KL1 TTD PRAMUJASA: URL deployment Apps Script PRAMUJASA (code.gs Pramujasa, bukan Kasir).
 // ISI INI dengan URL /exec deployment Pramujasa yang baru. Kalau masih kosong, aplikasi
 // otomatis pakai fallback API_KASIR ?action=getPramujasa (sudah ditambahkan di code.gs Kasir).
-const API_PRAMUJASA = '';
+const API_PRAMUJASA: string = '';
 
 const KASIR_DRAFT_KEY = 'anteng_kasir_draft';
 

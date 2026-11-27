@@ -238,6 +238,7 @@ export default function App() {
       {screen === 's4' && (
         <PpaScreen
           petugasNama={petugasNama}
+          masterRit={masterRit}
           onBackToLogin={backToLogin}
           onOpenLostFound={() => openLostFound('s4')}
           showToast={showToast}

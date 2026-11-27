@@ -128,6 +128,10 @@ export interface PramujasaRecord {
   namaPramudi?: string;
   status: 'SEMENTARA' | 'TERVALIDASI' | 'GAGAL_KIRIM';
   waktuKirim: string;
+  statusPerjalanan?: string;
+  idPerjalananAsal?: string;
+  titikGanti?: string;
+  halteTitikGanti?: string;
   // Legacy compatibility fields for reading older stored items
   metodeBayar?: string;
   umum?: number;

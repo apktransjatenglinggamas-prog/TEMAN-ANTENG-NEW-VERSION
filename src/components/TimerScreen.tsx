@@ -28,15 +28,26 @@ import type { MasterJadwalMap, MasterRitMap } from '../types/anteng';
 
 type TimerRecord = Record<string, unknown>;
 
-export default function TimerScreen(props: {
-  onBack: () => void;
+export function TimerScreen(props: {
   petugasNama: string;
   masterJadwal: MasterJadwalMap;
   masterRit: MasterRitMap;
+  onReloadMaster: () => Promise<void>;
+  onBackToLogin: () => void;
+  onOpenLostFound: () => void;
   showToast: (msg: string, type: 'ok' | 'err' | 'warn') => void;
   setGlobalLoading: (v: boolean) => void;
 }) {
-  const { onBack, petugasNama, masterJadwal, masterRit, showToast, setGlobalLoading } = props;
+  const {
+    petugasNama,
+    masterJadwal,
+    masterRit,
+    onReloadMaster: _onReloadMaster,
+    onBackToLogin,
+    onOpenLostFound: _onOpenLostFound,
+    showToast,
+    setGlobalLoading,
+  } = props;
   const [tanggal, setTanggal] = useState(tglHariIni());
   const [koridor, setKoridor] = useState('KOR01');
   const [lb, setLb] = useState('LB01');
@@ -187,10 +198,15 @@ export default function TimerScreen(props: {
   return (
     <div className="min-h-screen bg-slate-100 pb-10">
       <div className="max-w-xl mx-auto bg-white min-h-screen shadow-sm border-x border-slate-200 flex flex-col">
-        <div className="bg-gradient-to-br from-[#0056b3] to-[#003366] text-white p-4">
-          <button type="button" onClick={onBack} className="text-sm font-bold underline cursor-pointer">← Kembali</button>
-          <h1 className="text-xl font-extrabold mt-1">TIMER — Keberangkatan Bus</h1>
-          <p className="text-xs opacity-80">Petugas: {petugasNama} | Terminal Awal: {terminalAwal} | Arah: {arah}</p>
+        <div className="bg-gradient-to-br from-[#0056b3] to-[#003366] text-white p-4 flex justify-between items-start">
+          <div>
+            <button type="button" onClick={onBackToLogin} className="text-sm font-bold underline cursor-pointer">← Kembali</button>
+            <h1 className="text-xl font-extrabold mt-1">TIMER — Keberangkatan Bus</h1>
+            <p className="text-xs opacity-80">Petugas: {petugasNama} | Terminal Awal: {terminalAwal} | Arah: {arah}</p>
+          </div>
+          <button type="button" onClick={_onOpenLostFound} className="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1 shadow cursor-pointer">
+            📦 Barang Tertinggal
+          </button>
         </div>
         <div className="p-4 space-y-4">
           <div>

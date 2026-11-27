@@ -16,7 +16,6 @@ import {
   API_TIMER,
   IDS_PRAM_KEY,
   KATEGORI_LIST,
-  LIST_HALTE,
   LIST_KORIDOR,
   LIST_LB,
   LIST_RIT,
@@ -62,6 +61,16 @@ export function PramujasaScreen({
   const [koridor, setKoridor] = useState('KOR01');
   const [lb, setLb] = useState('LB01');
   const [rit, setRit] = useState('R01');
+
+  // ===== PANEL CADANGAN LBC01 — PENAMBAHAN SAJA =====
+  const [statusPerjalanan, setStatusPerjalanan] = useState('NORMAL');
+  const [idPerjalananAsal, setIdPerjalananAsal] = useState('');
+  const [titikGanti, setTitikGanti] = useState('TERMINAL_AWAL');
+  const [halteTitikGanti, setHalteTitikGanti] = useState('');
+  const isCadangan = lb === 'LBC01';
+  const tampilPanelCadangan = isCadangan || statusPerjalanan === 'LANJUTAN_SETELAH_PERBAIKAN';
+  const statusPerjalananEfektif = tampilPanelCadangan ? statusPerjalanan : 'NORMAL';
+
   const [shift, setShift] = useState('SHIFT 1');
   const [jamTiba, setJamTiba] = useState(jamSekarangHHMM());
   const [jamManual, setJamManual] = useState(false);
@@ -73,12 +82,19 @@ export function PramujasaScreen({
   const [manualArah, setManualArah] = useState<'BP' | 'BK'>('BP');
   const [selectedHalteId, setSelectedHalteId] = useState('');
 
-  // Input kolom Tunai & Non-Tunai per kategori (seperti modul Kasir, tanpa dropdown)
-  const [tunaiInputs, setTunaiInputs] = useState<KategoriCounts>(emptyKategoriCounts);
-  const [nonTunaiInputs, setNonTunaiInputs] = useState<KategoriCounts>(emptyKategoriCounts);
-  const [turunHalte, setTurunHalte] = useState('0');
-  const [transitHalte, setTransitHalte] = useState('0');
-  const [pptHalte, setPptHalte] = useState('0');
+  // Input penumpang per halte dengan dropdown jenis transaksi (metodeBayar)
+  const [metodeBayar, setMetodeBayar] = useState('TUNAI');
+  const [pnpCounts, setPnpCounts] = useState<Record<KategoriKey, string>>({
+    umum: '',
+    buruh: '',
+    pelajar: '',
+    lansia: '',
+    disabilitas: '',
+    veteran: '',
+  });
+  const [turunHalte, setTurunHalte] = useState('');
+  const [transitHalte, setTransitHalte] = useState('');
+  const [pptHalte, setPptHalte] = useState('');
   const [ket, setKet] = useState('');
 
   const [riwayat, setRiwayat] = useState<PramujasaRecord[]>(() =>
@@ -90,8 +106,11 @@ export function PramujasaScreen({
   const [sending, setSending] = useState(false);
 
   const idPerjalanan = useMemo(
-    () => `${koridor}-${lb}${rit}${tanggal.split('-').join('')}`,
-    [koridor, lb, rit, tanggal]
+    () =>
+      isCadangan && idPerjalananAsal.trim()
+        ? `${koridor}-LBC01${rit}${tanggal.split('-').join('')}-GANTI-${idPerjalananAsal.trim()}`
+        : `${koridor}-${lb}${rit}${tanggal.split('-').join('')}`,
+    [koridor, lb, rit, tanggal, isCadangan, idPerjalananAsal]
   );
 
   // Acuan arah dari MASTER_RIT berdasarkan bus + rit
@@ -138,61 +157,43 @@ export function PramujasaScreen({
       return masterHalte;
     }
 
-    return LIST_HALTE.map((h) => ({
-      id: h.id,
-      koridor: 'KOR01',
-      nama: h.value,
-      arah: arahAktif,
-      status: 'AKTIF',
-    }));
+    return [
+      { id: 'HT01', nama: 'Terminal Bulupitu', koridor, arah: 'BP' },
+      { id: 'HT02', nama: 'Halte Simpang Purbalingga', koridor, arah: 'BP' },
+      { id: 'HT03', nama: 'Terminal Bukateja', koridor, arah: 'BK' },
+    ];
   }, [masterHalte, koridor, arahAktif]);
 
-  // Pastikan selectedHalteId selalu valid mengikuti halte searah saat ganti bus/rit/arah
-  useEffect(() => {
-    if (halteSearah.length === 0) return;
-    const stillValid = halteSearah.some((h) => h.id === selectedHalteId);
-    if (!stillValid) {
-      setSelectedHalteId(halteSearah[0].id);
-    }
+  const selectedHalte = useMemo(() => {
+    return halteSearah.find((h) => h.id === selectedHalteId) || halteSearah[0] || null;
   }, [halteSearah, selectedHalteId]);
 
-  // Auto-select Pramudi pertama jika daftar MASTER_PRAMUDI termuat
-  useEffect(() => {
-    if (masterPramudi.length > 0 && !selectedPramudiId) {
-      setSelectedPramudiId(masterPramudi[0].id);
-    }
+  // Default pilih pramudi pertama jika belum dipilih
+  const selectedPramudi = useMemo(() => {
+    if (masterPramudi.length === 0) return null;
+    return masterPramudi.find((p) => p.id === selectedPramudiId) || masterPramudi[0] || null;
   }, [masterPramudi, selectedPramudiId]);
 
-  const selectedPramudi = useMemo(
-    () => masterPramudi.find((p) => p.id === selectedPramudiId) || null,
-    [masterPramudi, selectedPramudiId]
-  );
-
-  const selectedHalte = useMemo(
-    () => halteSearah.find((h) => h.id === selectedHalteId) || halteSearah[0],
-    [halteSearah, selectedHalteId]
-  );
-
+  // Shift otomatis berdasarkan nomor rit (R01-R04 = SHIFT 1, R05-R08 = SHIFT 2)
   useEffect(() => {
-    setTanggal(tglHariIni());
     if (!jamManual) {
       setJamTiba(jamSekarangHHMM());
+    }
+    const ritStr = String(rit || '').toUpperCase();
+    const num = parseInt(ritStr.replace(/[^0-9]/g, ''), 10);
+    if (!isNaN(num)) {
+      if (num >= 1 && num <= 4) setShift('SHIFT 1');
+      else if (num >= 5) setShift('SHIFT 2');
     }
   }, [koridor, lb, rit, jamManual]);
 
   const subtotalHalte = useMemo(() => {
-    let subTunai = 0;
-    let subNonTunai = 0;
+    let sub = 0;
     for (const k of KATEGORI_LIST) {
-      subTunai += Math.max(0, tunaiInputs[k.key] || 0);
-      subNonTunai += Math.max(0, nonTunaiInputs[k.key] || 0);
+      sub += Math.max(0, parseInt(pnpCounts[k.key], 10) || 0);
     }
-    return {
-      subTunai,
-      subNonTunai,
-      total: subTunai + subNonTunai,
-    };
-  }, [tunaiInputs, nonTunaiInputs]);
+    return sub;
+  }, [pnpCounts]);
 
   // Akumulasi selama 1 Rit (data tersimpan di rit ini)
   const ringkasRitTersimpan = useMemo(
@@ -234,30 +235,37 @@ export function PramujasaScreen({
     [riwayat, idPerjalanan]
   );
 
-  const updateKategoriInput = (
-    jenis: 'tunai' | 'nonTunai',
-    key: KategoriKey,
-    rawVal: string
-  ) => {
-    const num = Math.max(0, parseInt(rawVal, 10) || 0);
-    if (jenis === 'tunai') {
-      setTunaiInputs((prev) => ({ ...prev, [key]: num }));
-    } else {
-      setNonTunaiInputs((prev) => ({ ...prev, [key]: num }));
-    }
+  const updatePnpCount = (key: KategoriKey, rawVal: string) => {
+    setPnpCounts((prev) => ({ ...prev, [key]: rawVal }));
   };
 
   const bersihkanInputHalte = () => {
-    setTunaiInputs(emptyKategoriCounts());
-    setNonTunaiInputs(emptyKategoriCounts());
-    setTurunHalte('0');
-    setTransitHalte('0');
-    setPptHalte('0');
+    setPnpCounts({
+      umum: '',
+      buruh: '',
+      pelajar: '',
+      lansia: '',
+      disabilitas: '',
+      veteran: '',
+    });
+    setTurunHalte('');
+    setTransitHalte('');
+    setPptHalte('');
     setKet('');
     setJamManual(false);
   };
 
   const handleSimpanSementara = () => {
+    // Validasi panel cadangan LBC01 — penambahan saja
+    if (isCadangan && !idPerjalananAsal.trim()) {
+      showToast('Isi dulu Bus yang diganti (ID Perjalanan Asal) untuk LBC01.', 'warn');
+      return;
+    }
+    if (isCadangan && titikGanti === 'TENGAH_JALAN' && !halteTitikGanti.trim()) {
+      showToast('Isi dulu Halte Titik Ganti untuk LBC01.', 'warn');
+      return;
+    }
+
     const freshRiw = bacaStorage<PramujasaRecord>(STORAGE_PRAM_KEY);
     if (
       freshRiw.some((r) => r.idPerjalanan === idPerjalanan && r.status === 'TERVALIDASI') ||
@@ -270,8 +278,8 @@ export function PramujasaScreen({
     const turunNum = Math.max(0, parseInt(turunHalte, 10) || 0);
     const transitNum = Math.max(0, parseInt(transitHalte, 10) || 0);
     const pptNum = Math.max(0, parseInt(pptHalte, 10) || 0);
-    if (subtotalHalte.total === 0 && turunNum === 0 && transitNum === 0 && pptNum === 0) {
-      showToast('Isi jumlah penumpang (Tunai atau Non-Tunai) halte terlebih dahulu.', 'warn');
+    if (subtotalHalte === 0 && turunNum === 0 && transitNum === 0 && pptNum === 0) {
+      showToast('Isi jumlah penumpang halte terlebih dahulu.', 'warn');
       return;
     }
 
@@ -280,7 +288,18 @@ export function PramujasaScreen({
     const halteId = selectedHalte?.id || 'HT01';
     const halteNama = selectedHalte?.nama || 'Halte';
 
-    const itemBaru: PramujasaRecord = {
+    const counts: KategoriCounts = {
+      umum: Math.max(0, parseInt(pnpCounts.umum, 10) || 0),
+      buruh: Math.max(0, parseInt(pnpCounts.buruh, 10) || 0),
+      pelajar: Math.max(0, parseInt(pnpCounts.pelajar, 10) || 0),
+      lansia: Math.max(0, parseInt(pnpCounts.lansia, 10) || 0),
+      disabilitas: Math.max(0, parseInt(pnpCounts.disabilitas, 10) || 0),
+      veteran: Math.max(0, parseInt(pnpCounts.veteran, 10) || 0),
+    };
+    const sumCat = KATEGORI_LIST.reduce((acc, k) => acc + counts[k.key], 0);
+    const isNT = metodeBayar.toUpperCase().includes('NON TUNAI') || metodeBayar.toUpperCase().includes('NON-TUNAI');
+
+    const newItem: PramujasaRecord = {
       idTransaksi: `PJT_${nowMs}`,
       idDetail: `TJD_${nowMs}`,
       tanggal,
@@ -292,11 +311,12 @@ export function PramujasaScreen({
       jamTiba: jam,
       idHalte: halteId,
       namaHalte: halteNama,
-      tunai: { ...tunaiInputs },
-      nonTunai: { ...nonTunaiInputs },
-      totalTunai: subtotalHalte.subTunai,
-      totalNonTunai: subtotalHalte.subNonTunai,
-      totalHalte: subtotalHalte.total,
+      metodeBayar,
+      tunai: isNT ? emptyKategoriCounts() : counts,
+      nonTunai: isNT ? counts : emptyKategoriCounts(),
+      totalTunai: isNT ? 0 : sumCat,
+      totalNonTunai: isNT ? sumCat : 0,
+      totalHalte: sumCat,
       penumpangTurun: turunNum,
       penumpangTransit: transitNum,
       penumpangPPT: pptNum,
@@ -306,26 +326,22 @@ export function PramujasaScreen({
       namaPramudi: selectedPramudi?.nama || '',
       status: 'SEMENTARA',
       waktuKirim: jam,
+      // ===== 4 field cadangan — penambahan saja =====
+      statusPerjalanan: statusPerjalananEfektif,
+      idPerjalananAsal: tampilPanelCadangan ? idPerjalananAsal.trim().toUpperCase() : '',
+      titikGanti: tampilPanelCadangan ? titikGanti : '',
+      halteTitikGanti: tampilPanelCadangan ? halteTitikGanti.trim().toUpperCase() : '',
     };
 
-    const current = bacaStorage<PramujasaRecord>(STORAGE_PRAM_KEY);
-    const updated = [itemBaru, ...current];
+    const updated = [newItem, ...freshRiw];
     tulisStorage(STORAGE_PRAM_KEY, updated);
     setRiwayat(updated);
     bersihkanInputHalte();
-
-    const ringkasBaru = hitungRingkasanRitPram(updated, tanggal, lb, rit, idPerjalanan);
-    showToast(
-      `Disimpan SEMENTARA (${halteNama}). Akumulasi rit: ${ringkasBaru.totalRit} pnp (Tunai ${ringkasBaru.totalTunai} | Non-Tunai ${ringkasBaru.totalNonTunai}).`,
-      'warn'
-    );
+    showToast('Data halte berhasil disimpan sementara!', 'ok');
   };
 
-  const handleHapusDraft = (idDetail: string) => {
-    const current = bacaStorage<PramujasaRecord>(STORAGE_PRAM_KEY);
-    const updated = current.filter(
-      (item) => !(item.idDetail === idDetail && item.status !== 'TERVALIDASI')
-    );
+  const handleHapusSementarItem = (idDetail: string) => {
+    const updated = riwayat.filter((d) => d.idDetail !== idDetail);
     tulisStorage(STORAGE_PRAM_KEY, updated);
     setRiwayat(updated);
     showToast('Transaksi sementara halte dihapus.', 'ok');
@@ -333,6 +349,16 @@ export function PramujasaScreen({
 
   const handleValidasiKirim = async () => {
     if (sending) return;
+
+    // Validasi panel cadangan LBC01 — penambahan saja
+    if (isCadangan && !idPerjalananAsal.trim()) {
+      showToast('Isi dulu Bus yang diganti (ID Perjalanan Asal) untuk LBC01.', 'warn');
+      return;
+    }
+    if (isCadangan && titikGanti === 'TENGAH_JALAN' && !halteTitikGanti.trim()) {
+      showToast('Isi dulu Halte Titik Ganti untuk LBC01.', 'warn');
+      return;
+    }
 
     let currentRiw = bacaStorage<PramujasaRecord>(STORAGE_PRAM_KEY);
     if (
@@ -355,7 +381,18 @@ export function PramujasaScreen({
     const halteId = selectedHalte?.id || 'HT01';
     const halteNama = selectedHalte?.nama || 'Halte';
 
-    if (subtotalHalte.total > 0 || turunNum > 0 || transitNum > 0 || pptNum > 0) {
+    if (subtotalHalte > 0 || turunNum > 0 || transitNum > 0 || pptNum > 0) {
+      const counts: KategoriCounts = {
+        umum: Math.max(0, parseInt(pnpCounts.umum, 10) || 0),
+        buruh: Math.max(0, parseInt(pnpCounts.buruh, 10) || 0),
+        pelajar: Math.max(0, parseInt(pnpCounts.pelajar, 10) || 0),
+        lansia: Math.max(0, parseInt(pnpCounts.lansia, 10) || 0),
+        disabilitas: Math.max(0, parseInt(pnpCounts.disabilitas, 10) || 0),
+        veteran: Math.max(0, parseInt(pnpCounts.veteran, 10) || 0),
+      };
+      const sumCat = KATEGORI_LIST.reduce((acc, k) => acc + counts[k.key], 0);
+      const isNT = metodeBayar.toUpperCase().includes('NON TUNAI') || metodeBayar.toUpperCase().includes('NON-TUNAI');
+
       const itemHalteAkhir: PramujasaRecord = {
         idTransaksi: idPramTransaksi,
         idDetail: `TJD_${nowMs}`,
@@ -368,11 +405,12 @@ export function PramujasaScreen({
         jamTiba: jam,
         idHalte: halteId,
         namaHalte: halteNama,
-        tunai: { ...tunaiInputs },
-        nonTunai: { ...nonTunaiInputs },
-        totalTunai: subtotalHalte.subTunai,
-        totalNonTunai: subtotalHalte.subNonTunai,
-        totalHalte: subtotalHalte.total,
+        metodeBayar,
+        tunai: isNT ? emptyKategoriCounts() : counts,
+        nonTunai: isNT ? counts : emptyKategoriCounts(),
+        totalTunai: isNT ? 0 : sumCat,
+        totalNonTunai: isNT ? sumCat : 0,
+        totalHalte: sumCat,
         penumpangTurun: turunNum,
         penumpangTransit: transitNum,
         penumpangPPT: pptNum,
@@ -382,6 +420,11 @@ export function PramujasaScreen({
         namaPramudi: selectedPramudi?.nama || '',
         status: 'SEMENTARA',
         waktuKirim: jam,
+        // ===== 4 field cadangan — penambahan saja =====
+        statusPerjalanan: statusPerjalananEfektif,
+        idPerjalananAsal: tampilPanelCadangan ? idPerjalananAsal.trim().toUpperCase() : '',
+        titikGanti: tampilPanelCadangan ? titikGanti : '',
+        halteTitikGanti: tampilPanelCadangan ? halteTitikGanti.trim().toUpperCase() : '',
       };
       currentRiw = [itemHalteAkhir, ...currentRiw];
       tulisStorage(STORAGE_PRAM_KEY, currentRiw);
@@ -436,7 +479,6 @@ export function PramujasaScreen({
 
     const ringkasRit = hitungRingkasanRitPram(currentRiw, tanggal, lb, rit, idPerjalanan);
 
-    // Gunakan Pramudi yang dipilih di Box Pramudi; fallback ke lookup Timer jika kosong
     let namaPramudiFinal = selectedPramudi?.nama || '';
     if (!namaPramudiFinal) {
       try {
@@ -473,6 +515,11 @@ export function PramujasaScreen({
       KETERANGAN: ketVal,
       UPDATED_AT: nowTs,
       UPDATED_BY: petugasNama,
+      // ===== 4 field cadangan — penambahan saja =====
+      STATUS_PERJALANAN: statusPerjalananEfektif,
+      ID_PERJALANAN_ASAL: tampilPanelCadangan ? idPerjalananAsal.trim().toUpperCase() : '',
+      TITIK_GANTI: tampilPanelCadangan ? titikGanti : '',
+      HALTE_TITIK_GANTI: tampilPanelCadangan ? halteTitikGanti.trim().toUpperCase() : '',
     };
 
     const payload = {
@@ -576,6 +623,10 @@ export function PramujasaScreen({
 
   const handleReset = () => {
     bersihkanInputHalte();
+    setStatusPerjalanan('NORMAL');
+    setIdPerjalananAsal('');
+    setTitikGanti('TERMINAL_AWAL');
+    setHalteTitikGanti('');
     setJamTiba(jamSekarangHHMM());
     setLastWaMsg('');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -590,7 +641,7 @@ export function PramujasaScreen({
           <div className="pr-10">
             <h2 className="text-xl font-extrabold leading-tight">Selamat Bekerja {petugasNama}</h2>
             <p className="text-sm text-white/90 font-medium">
-              Isi jumlah penumpang Tunai &amp; Non-Tunai di kolom kategori halte!
+              Pilih metode bayar &amp; isi jumlah penumpang per kategori halte!
             </p>
           </div>
           <button
@@ -665,6 +716,44 @@ export function PramujasaScreen({
               </select>
             </div>
           </div>
+
+          {/* ===== PANEL CADANGAN LBC01 — muncul otomatis kalau LB = LBC01 ===== */}
+          {tampilPanelCadangan && (
+            <div className="rounded-2xl border-2 border-amber-400 bg-amber-50 p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🚌</span>
+                <div>
+                  <h3 className="font-extrabold text-amber-900 text-sm">ARMADA CADANGAN AKTIF — {lb}</h3>
+                  <p className="text-xs text-amber-800">Bus ini menggantikan bus reguler. Lengkapi keterangan pengganti di bawah.</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-extrabold text-slate-700 mb-1">Status Perjalanan</label>
+                  <select value={statusPerjalanan} onChange={(e) => setStatusPerjalanan(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border-2 border-slate-800 bg-white font-bold">
+                    <option value="PENGGANTI">PENGGANTI</option>
+                    <option value="LANJUTAN_SETELAH_PERBAIKAN">LANJUTAN_SETELAH_PERBAIKAN</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-extrabold text-slate-700 mb-1">Menggantikan Bus (ID Asal)</label>
+                  <input type="text" placeholder="Contoh: KOR01-LB05R0320261127" value={idPerjalananAsal} onChange={(e) => setIdPerjalananAsal(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border-2 border-slate-800 bg-white font-mono-num font-bold text-center" />
+                </div>
+                <div>
+                  <label className="block text-xs font-extrabold text-slate-700 mb-1">Titik Ganti</label>
+                  <select value={titikGanti} onChange={(e) => setTitikGanti(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border-2 border-slate-800 bg-white font-bold">
+                    <option value="TERMINAL_AWAL">TERMINAL_AWAL</option>
+                    <option value="TENGAH_JALAN">TENGAH_JALAN</option>
+                    <option value="AKHIR_RIT">AKHIR_RIT</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-extrabold text-slate-700 mb-1">Halte Titik Ganti</label>
+                  <input type="text" placeholder="Nama halte (jika tengah jalan)" value={halteTitikGanti} onChange={(e) => setHalteTitikGanti(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border-2 border-slate-800 bg-white font-bold text-center" />
+                </div>
+              </div>
+            </div>
+          )}
 
           <div>
             <label className="block text-xs font-extrabold text-center text-slate-700 mb-1">
@@ -784,106 +873,86 @@ export function PramujasaScreen({
             </select>
           </div>
 
-          {/* KOLOM INPUT KATEGORI PENUMPANG (MODEL KASIR: TUNAI & NON-TUNAI BERDAMPINGAN) */}
-          <div className="bg-white border-2 border-slate-300 rounded-2xl p-3.5 space-y-2.5">
+          {/* KOLOM INPUT KATEGORI PENUMPANG DENGAN DROPDOWN METODE / JENIS TRANSAKSI */}
+          <div className="bg-white border-2 border-slate-300 rounded-2xl p-4 space-y-3">
             <div className="text-center">
               <h4 className="text-sm font-extrabold text-slate-900">
-                INPUT PENUMPANG HALTE INI (PER KATEGORI)
+                INPUT PENUMPANG HALTE INI
               </h4>
               <p className="text-xs font-semibold text-slate-500 mt-0.5">
-                Isi kolom Tunai &amp; Non-Tunai secara langsung untuk setiap kategori
+                Pilih metode pembayaran, lalu isi jumlah penumpang per kategori
               </p>
             </div>
 
-            {KATEGORI_LIST.map((kat) => (
-              <div
-                key={kat.key}
-                className="bg-slate-50 border border-slate-200 rounded-xl p-2.5"
+            <div>
+              <label className="block text-xs font-extrabold text-slate-700 mb-1">
+                Jenis Transaksi / Metode Pembayaran
+              </label>
+              <select
+                value={metodeBayar}
+                onChange={(e) => setMetodeBayar(e.target.value)}
+                className="w-full px-3 py-3 rounded-xl border-2 border-slate-800 bg-white font-extrabold text-center text-base"
               >
-                <div className="text-sm font-extrabold text-slate-800 mb-2">{kat.label}</div>
-                <div className="grid grid-cols-2 gap-2.5">
-                  <div>
-                    <label className="block text-[11px] font-extrabold text-emerald-800 mb-1">
-                      Pnp Tunai
-                    </label>
-                    <input
-                      type="number"
-                      min={0}
-                      value={tunaiInputs[kat.key]}
-                      onChange={(e) => updateKategoriInput('tunai', kat.key, e.target.value)}
-                      className="w-full px-2 py-2.5 rounded-xl border-2 border-slate-700 bg-white font-mono-num font-extrabold text-center text-base text-slate-900"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-extrabold text-violet-800 mb-1">
-                      Pnp Non-Tunai
-                    </label>
-                    <input
-                      type="number"
-                      min={0}
-                      value={nonTunaiInputs[kat.key]}
-                      onChange={(e) => updateKategoriInput('nonTunai', kat.key, e.target.value)}
-                      className="w-full px-2 py-2.5 rounded-xl border-2 border-slate-700 bg-white font-mono-num font-extrabold text-center text-base text-slate-900"
-                    />
-                  </div>
+                <option value="TUNAI">TUNAI</option>
+                <option value="NON-TUNAI">NON-TUNAI</option>
+              </select>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-2">
+              {KATEGORI_LIST.map((kat) => (
+                <div key={kat.key} className="bg-slate-50 border border-slate-200 rounded-xl p-2.5">
+                  <label className="block text-xs font-extrabold text-slate-800 mb-1">
+                    {kat.label}
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    placeholder="0"
+                    value={pnpCounts[kat.key]}
+                    onChange={(e) => updatePnpCount(kat.key, e.target.value)}
+                    className="w-full px-2 py-2.5 rounded-xl border-2 border-slate-700 bg-white font-mono-num font-extrabold text-center text-lg text-slate-900"
+                  />
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
 
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs font-extrabold text-blue-950 space-y-1">
-              <div className="flex justify-between">
-                <span>Subtotal Tunai Halte Ini:</span>
-                <span className="font-mono-num">{subtotalHalte.subTunai} org</span>
+            <div className="grid grid-cols-3 gap-2 pt-2">
+              <div>
+                <label className="block text-xs font-extrabold text-slate-700 mb-1">Pnp Turun</label>
+                <input
+                  type="number"
+                  min={0}
+                  placeholder="0"
+                  value={turunHalte}
+                  onChange={(e) => setTurunHalte(e.target.value)}
+                  className="w-full px-2 py-3 rounded-xl border-2 border-slate-800 bg-rose-50 font-mono-num font-bold text-center text-lg"
+                />
               </div>
-              <div className="flex justify-between">
-                <span>Subtotal Non-Tunai Halte Ini:</span>
-                <span className="font-mono-num">{subtotalHalte.subNonTunai} org</span>
+              <div>
+                <label className="block text-xs font-extrabold text-slate-700 mb-1">Pnp Transit</label>
+                <input
+                  type="number"
+                  min={0}
+                  placeholder="0"
+                  value={transitHalte}
+                  onChange={(e) => setTransitHalte(e.target.value)}
+                  className="w-full px-2 py-3 rounded-xl border-2 border-slate-800 bg-amber-50 font-mono-num font-bold text-center text-lg"
+                />
               </div>
-              <div className="flex justify-between pt-1 border-t border-blue-200 text-sm text-red-700">
-                <span>Total Penumpang Halte Ini:</span>
-                <span className="font-mono-num">{subtotalHalte.total} org</span>
+              <div>
+                <label className="block text-xs font-extrabold text-slate-700 mb-1">Pnp PPT</label>
+                <input
+                  type="number"
+                  min={0}
+                  placeholder="0"
+                  value={pptHalte}
+                  onChange={(e) => setPptHalte(e.target.value)}
+                  className="w-full px-2 py-3 rounded-xl border-2 border-slate-800 bg-sky-50 font-mono-num font-bold text-center text-lg"
+                />
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-2 sm:gap-3">
-            <div>
-              <label className="block text-xs font-extrabold text-slate-700 mb-1">
-                Pnp Turun
-              </label>
-              <input
-                type="number"
-                min={0}
-                value={turunHalte}
-                onChange={(e) => setTurunHalte(e.target.value)}
-                className="w-full px-2 sm:px-3 py-3 rounded-xl border-2 border-slate-800 bg-rose-50 font-mono-num font-bold text-center text-lg"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-extrabold text-slate-700 mb-1">
-                Pnp Transit
-              </label>
-              <input
-                type="number"
-                min={0}
-                value={transitHalte}
-                onChange={(e) => setTransitHalte(e.target.value)}
-                className="w-full px-2 sm:px-3 py-3 rounded-xl border-2 border-slate-800 bg-amber-50 font-mono-num font-bold text-center text-lg"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-extrabold text-slate-700 mb-1">
-                Pnp PPT
-              </label>
-              <input
-                type="number"
-                min={0}
-                value={pptHalte}
-                onChange={(e) => setPptHalte(e.target.value)}
-                className="w-full px-2 sm:px-3 py-3 rounded-xl border-2 border-slate-800 bg-sky-50 font-mono-num font-bold text-center text-lg"
-              />
-            </div>
-          </div>
           <div>
             <label className="block text-xs font-extrabold text-slate-700 mb-1">
               Keterangan (Opsional)
@@ -1013,13 +1082,14 @@ export function PramujasaScreen({
                               {d.namaPramudi ? ` · Pramudi: ${d.namaPramudi}` : ''}
                             </div>
                           </div>
-                          <span
-                            className={`font-extrabold ${
-                              d.status === 'GAGAL_KIRIM' ? 'text-red-700' : 'text-amber-700'
-                            }`}
+                          <button
+                            type="button"
+                            onClick={() => handleHapusSementarItem(d.idDetail)}
+                            className="text-red-600 hover:text-red-800 p-1 cursor-pointer"
+                            title="Hapus baris"
                           >
-                            {d.status}
-                          </span>
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
 
                         <div className="grid grid-cols-2 gap-2 bg-slate-50 rounded-lg p-2 border border-slate-200">
@@ -1045,21 +1115,9 @@ export function PramujasaScreen({
                           </div>
                         </div>
 
-                        <div className="flex justify-between items-center pt-0.5">
-                          <span className="font-bold text-slate-700">
-                            Total Naik: <b>{norm.totalHalte}</b> org · Turun:{' '}
-                            <b>{d.penumpangTurun}</b> org · Transit:{' '}
-                            <b>{d.penumpangTransit || 0}</b> org · PPT:{' '}
-                            <b>{d.penumpangPPT || 0}</b> org
-                            {d.keterangan && d.keterangan !== '-' ? ` · Ket: ${d.keterangan}` : ''}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => handleHapusDraft(d.idDetail)}
-                            className="inline-flex items-center gap-1 font-bold text-red-600 hover:underline cursor-pointer shrink-0"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" /> Hapus
-                          </button>
+                        <div className="text-slate-600 font-medium">
+                          Turun: {d.penumpangTurun || 0} · Transit: {d.penumpangTransit || 0} · PPT:{' '}
+                          {d.penumpangPPT || 0} {d.keterangan ? `· Ket: ${d.keterangan}` : ''}
                         </div>
                       </div>
                     );
@@ -1072,116 +1130,79 @@ export function PramujasaScreen({
               type="button"
               disabled={sending}
               onClick={() => void handleValidasiKirim()}
-              className={`w-full py-4 rounded-2xl text-white font-extrabold text-lg cursor-pointer disabled:opacity-60 ${
-                sudahTersimpan
-                  ? 'bg-red-700 hover:bg-red-800'
-                  : 'bg-emerald-600 hover:bg-emerald-700'
-              }`}
+              className="w-full py-4 rounded-2xl font-extrabold text-lg text-white bg-[#004080] hover:bg-blue-950 disabled:cursor-not-allowed cursor-pointer shadow-lg"
             >
-              {sending
-                ? 'MENGIRIM KE DATABASE...'
-                : sudahTersimpan
-                ? 'ID_PERJALANAN SUDAH ADA'
-                : `VALIDASI & KIRIM (${unsentCountRit} Draft${subtotalHalte.total > 0 || Number(turunHalte) > 0 || Number(transitHalte) > 0 || Number(pptHalte) > 0 ? ' + Halte Ini' : ''})`}
-            </button>
-
-            {lastWaMsg && (
-              <>
-                <WhatsAppShareBox
-                  message={lastWaMsg}
-                  onCopied={(ok) =>
-                    showToast(
-                      ok ? 'Pesan validasi WA berhasil disalin.' : 'Gagal menyalin pesan WA.',
-                      ok ? 'ok' : 'err'
-                    )
-                  }
-                />
-                <button
-                  type="button"
-                  onClick={handleReset}
-                  className="w-full py-3.5 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-extrabold text-base cursor-pointer"
-                >
-                  INPUT HALTE / BUS BERIKUTNYA
-                </button>
-              </>
-            )}
-
-            <button
-              type="button"
-              onClick={onOpenLostFound}
-              className="w-full py-3.5 rounded-2xl bg-violet-600 hover:bg-violet-700 text-white font-extrabold text-base flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <PackageSearch className="w-5 h-5" /> BARANG TERTINGGAL
+              {sending ? 'MENGIRIM...' : 'VALIDASI & KIRIM KE DATABASE'}
             </button>
           </div>
 
+          {/* WHATSAPP SHARE BOX */}
+          <WhatsAppShareBox message={lastWaMsg} onCopied={() => {}} />
+
+          {/* TEKS KLIK: LIHAT RIWAYAT PRAMUJASA */}
           <div className="pt-2 text-center">
             <button
               type="button"
               onClick={() => setShowRiwayat((v) => !v)}
-              className="text-blue-600 font-extrabold underline text-sm cursor-pointer"
+              className="text-emerald-700 hover:text-emerald-950 font-extrabold underline text-sm cursor-pointer"
             >
-              {showRiwayat ? 'Sembunyikan Riwayat Pramujasa' : 'Lihat Riwayat Pramujasa'}
+              {showRiwayat ? 'Sembunyikan Riwayat Tervalidasi' : 'Lihat Riwayat Tervalidasi'}
             </button>
             <span className="ml-2 text-xs font-bold text-slate-600">
-              ({todayRiwayat.length} data hari ini)
+              ({todayRiwayat.filter((d) => d && d.status === 'TERVALIDASI').length} data hari ini)
             </span>
           </div>
 
           {showRiwayat && (
-            <div className="bg-slate-50 border-2 border-slate-200 rounded-2xl p-4 space-y-2.5">
-              <div className="flex justify-between items-center">
-                <span className="font-extrabold text-slate-900">RIWAYAT PRAMUJASA</span>
-                <span className="text-xs font-bold text-slate-600">{todayRiwayat.length} data</span>
+            <div className="bg-emerald-50 border-2 border-emerald-300 rounded-2xl p-4 space-y-2.5">
+              <div className="flex justify-between items-center mb-2">
+                <span className="font-extrabold text-emerald-950 text-sm">
+                  RIWAYAT TERVALIDASI HARI INI
+                </span>
+                <span className="text-xs font-bold text-emerald-900">
+                  {todayRiwayat.filter((d) => d && d.status === 'TERVALIDASI').length} data
+                </span>
               </div>
-              {todayRiwayat.length === 0 ? (
-                <p className="text-center text-sm text-slate-400 py-4">
-                  Belum ada data Pramujasa hari ini
+
+              {todayRiwayat.filter((d) => d && d.status === 'TERVALIDASI').length === 0 ? (
+                <p className="text-center text-sm text-emerald-800/80 py-4 font-medium">
+                  Belum ada data Pramujasa tervalidasi hari ini
                 </p>
               ) : (
-                todayRiwayat.map((d) => {
-                  const norm = normalizePramRecord(d);
-                  return (
-                    <div
-                      key={d.idDetail}
-                      className="bg-white border border-slate-300 rounded-xl p-3 text-sm space-y-1"
-                    >
-                      <div className="flex justify-between items-center gap-2">
-                        <span className="font-extrabold text-slate-900">
-                          {d.noLambung} | {d.rit} - {d.namaHalte}
-                        </span>
-                        <span
-                          className={`text-xs font-extrabold ${
-                            d.status === 'TERVALIDASI'
-                              ? 'text-emerald-700'
-                              : d.status === 'GAGAL_KIRIM'
-                              ? 'text-red-700'
-                              : 'text-amber-700'
-                          }`}
-                        >
-                          {d.status}
-                        </span>
+                todayRiwayat
+                  .filter((d) => d && d.status === 'TERVALIDASI')
+                  .map((d, idx) => {
+                    const norm = normalizePramRecord(d);
+                    return (
+                      <div
+                        key={`${d.idPerjalanan}-${idx}`}
+                        className="bg-white border border-emerald-300 rounded-xl p-3 text-xs space-y-1.5"
+                      >
+                        <div className="flex justify-between items-center">
+                          <span className="font-extrabold text-emerald-900">
+                            {d.noLambung} | {d.rit} · {d.idPerjalanan}
+                          </span>
+                          <span className="font-extrabold text-emerald-700">Tervalidasi</span>
+                        </div>
+                        <div className="text-slate-600 font-semibold">
+                          Halte: {d.namaHalte} · Jam: {d.jamTiba} · Petugas: {d.petugas}
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 bg-emerald-50/50 rounded-lg p-2">
+                          <div>
+                            <span className="font-bold text-emerald-900">Tunai: {norm.totalTunai} org</span>
+                          </div>
+                          <div>
+                            <span className="font-bold text-violet-900">Non-Tunai: {norm.totalNonTunai} org</span>
+                          </div>
+                        </div>
+                        {d.statusPerjalanan && d.statusPerjalanan !== 'NORMAL' && (
+                          <div className="text-xs font-bold text-amber-800">
+                            🚌 {d.statusPerjalanan} — Asal: {d.idPerjalananAsal || '-'} · Titik Ganti: {d.titikGanti || '-'}
+                          </div>
+                        )}
                       </div>
-                      <div className="text-xs font-mono-num text-slate-500">
-                        {d.idPerjalanan} · Jam {d.waktuKirim}
-                        {d.namaPramudi ? ` · Pramudi: ${d.namaPramudi}` : ''}
-                      </div>
-                      <div className="text-xs text-slate-700 font-semibold">
-                        Tunai: <b>{norm.totalTunai}</b> · Non-Tunai: <b>{norm.totalNonTunai}</b> ·
-                        Total Naik: <b>{norm.totalHalte}</b> · Turun: <b>{d.penumpangTurun}</b> · Transit: <b>{d.penumpangTransit || 0}</b> · PPT: <b>{d.penumpangPPT || 0}</b>
-                      </div>
-                      {d.status !== 'TERVALIDASI' && (
-                        <button
-                          type="button"
-                          onClick={() => handleHapusDraft(d.idDetail)}
-                          className="inline-flex items-center gap-1 text-xs font-bold text-red-600 hover:underline mt-1 cursor-pointer"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" /> Hapus Draft Lokal
-                        </button>
-                      )}
-                    </div>
-                  );
-                })
+                    );
+                  })
               )}
             </div>
           )}
