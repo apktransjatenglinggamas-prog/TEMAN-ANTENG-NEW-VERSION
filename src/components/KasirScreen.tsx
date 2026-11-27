@@ -318,12 +318,20 @@ const KL1_CSS = `
   .kl1-bawah td { vertical-align:top; padding:4px; }
   .kl1-ket { width:34%; }
   .kl1-ttd { width:33%; text-align:center; font-weight:700; }
+  .kl-modal-overlay { position:fixed; inset:0; background:rgba(15,23,42,0.6); display:flex; align-items:center; justify-content:center; padding:16px; z-index:9999; }
+  .kl-modal-box { background:#fff; border-radius:16px; max-width:380px; width:100%; padding:20px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.2); font-family:system-ui,-apple-system,sans-serif; color:#0f172a; text-align:center; }
+  .kl-modal-title { font-size:15px; font-weight:800; color:#059669; margin:0 0 6px; }
+  .kl-modal-msg { font-size:16px; font-weight:800; margin:0 0 16px; color:#0f172a; }
+  .kl-modal-actions { display:flex; gap:10px; }
+  .kl-modal-no { flex:1; padding:11px; border-radius:10px; border:2px solid #cbd5e1; background:#fff; color:#334155; font-weight:800; cursor:pointer; }
+  .kl-modal-yes { flex:1; padding:11px; border-radius:10px; border:none; background:#059669; color:#fff; font-weight:800; cursor:pointer; }
   @page { size:215mm 165mm; margin:5mm; } /* KERTAS 1/2 F4 landscape: F4 215x330 dilipat jadi 215x165 */
   @media print {
     body { background:#fff !important; margin:0; }
     body * { visibility:visible; }
     #kl1-print-area { position:static; width:100%; background:#fff; padding:0; min-height:auto; }
     .kl1-no-print { display:none !important; }
+    .kl-modal-overlay { display:none !important; visibility:hidden !important; }
     .kl1-kertas { max-width:none; margin:0; padding:0; }
   }
 `;
@@ -391,10 +399,59 @@ function KL1Tabel({ rows, totalPnp, totalRp }: { rows: KL1RowData[]; totalPnp: n
     </table>
   );
 }
-function KL1SheetView({ data, onClose, onPramujasaChange }: { data: KL1Data; onClose: () => void; onPramujasaChange?: (nama: string) => void }) {
+function KL1SheetView({
+  data,
+  onClose,
+  onPramujasaChange,
+  onSaveBeforePrint,
+  autoPrintOnMount,
+  onAutoPrintDone,
+}: {
+  data: KL1Data;
+  onClose: () => void;
+  onPramujasaChange?: (nama: string) => void;
+  onSaveBeforePrint?: () => void;
+  autoPrintOnMount?: boolean;
+  onAutoPrintDone?: () => void;
+}) {
+  const [confirmPrint, setConfirmPrint] = useState(false);
+
+  useEffect(() => {
+    if (!autoPrintOnMount) return;
+    const t = window.setTimeout(() => {
+      document.title = `KL1-${data.idPerjalanan || data.tanggal}`;
+      window.print();
+      onAutoPrintDone?.();
+    }, 120);
+    return () => window.clearTimeout(t);
+  }, [autoPrintOnMount, data.idPerjalanan, data.tanggal, onAutoPrintDone]);
+
+  const handleKlikCetakPdf = () => {
+    onSaveBeforePrint?.();
+    setConfirmPrint(true);
+  };
+
+  const handleLanjutCetak = () => {
+    setConfirmPrint(false);
+    document.title = `KL1-${data.idPerjalanan || data.tanggal}`;
+    window.print();
+  };
+
   return (
     <div id="kl1-print-area">
       <style>{KL1_CSS}</style>
+      {confirmPrint && (
+        <div className="kl-modal-overlay" role="dialog" aria-modal="true">
+          <div className="kl-modal-box">
+            <p className="kl-modal-title">Data KL1 tersimpan ke storage aplikasi</p>
+            <p className="kl-modal-msg">Apakah akan lanjut mencetak?</p>
+            <div className="kl-modal-actions">
+              <button type="button" onClick={() => setConfirmPrint(false)} className="kl-modal-no">TIDAK</button>
+              <button type="button" onClick={handleLanjutCetak} className="kl-modal-yes">IYA</button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="kl1-no-print" style={{ flexDirection: 'column' }}>
         {/* PRAMUJASA BELUM MUNCUL? Ketik manual di sini — langsung tampil di tanda tangan di bawah. Tidak ikut keprint. */}
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', background: '#fff', border: '2px solid #f59e0b', borderRadius: 12, padding: 10 }}>
@@ -409,7 +466,7 @@ function KL1SheetView({ data, onClose, onPramujasaChange }: { data: KL1Data; onC
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
         <button type="button" onClick={onClose} className="kl1-btn-abu">← KEMBALI</button>
-        <button type="button" onClick={() => { document.title = `KL1-${data.idPerjalanan || data.tanggal}`; window.print(); }} className="kl1-btn-hijau">🖨 CETAK / SIMPAN PDF (Kertas 1/2 F4)</button>
+        <button type="button" onClick={handleKlikCetakPdf} className="kl1-btn-hijau">🖨 CETAK / SIMPAN PDF (Kertas 1/2 F4)</button>
         </div>
       </div>
       <div className="kl1-kertas">
@@ -492,11 +549,19 @@ const KL2_CSS = `
   .kl2-bawah td { vertical-align:top; padding:4px; }
   .kl2-ttd { width:33%; text-align:center; font-weight:700; }
   .kl2-catatan { font-size:11px; color:#334155; margin:6px 0 0; }
+  .kl-modal-overlay { position:fixed; inset:0; background:rgba(15,23,42,0.6); display:flex; align-items:center; justify-content:center; padding:16px; z-index:9999; }
+  .kl-modal-box { background:#fff; border-radius:16px; max-width:380px; width:100%; padding:20px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.2); font-family:system-ui,-apple-system,sans-serif; color:#0f172a; text-align:center; }
+  .kl-modal-title { font-size:15px; font-weight:800; color:#059669; margin:0 0 6px; }
+  .kl-modal-msg { font-size:16px; font-weight:800; margin:0 0 16px; color:#0f172a; }
+  .kl-modal-actions { display:flex; gap:10px; }
+  .kl-modal-no { flex:1; padding:11px; border-radius:10px; border:2px solid #cbd5e1; background:#fff; color:#334155; font-weight:800; cursor:pointer; }
+  .kl-modal-yes { flex:1; padding:11px; border-radius:10px; border:none; background:#059669; color:#fff; font-weight:800; cursor:pointer; }
   @page { size:297mm 210mm landscape; margin:5mm; }
   @media print {
     body { background:#fff !important; margin:0; }
     #kl2-print-area { position:static; width:100%; background:#fff; padding:0; min-height:auto; }
     .kl2-no-print { display:none !important; }
+    .kl-modal-overlay { display:none !important; visibility:hidden !important; }
     .kl2-kertas { max-width:none; margin:0; padding:0; }
     .kl2-input, .kl2-input-lambung { border:none !important; }
   }
@@ -573,7 +638,22 @@ function KL2Tabel({ rows, katKiri, katKanan, onRowChange }: { rows: KL2Row[]; ka
     </table>
   );
 }
-function KL2SheetView({ data, onClose, onRowsChange, onShelterChange, onAutoFill }: { data: KL2Data; onClose: () => void; onRowsChange: (rows: KL2Row[]) => void; onShelterChange: (s: KL2Shelter) => void; onAutoFill: () => void }) {
+function KL2SheetView({
+  data,
+  onClose,
+  onRowsChange,
+  onShelterChange,
+  onAutoFill,
+  onSaveBeforePrint,
+}: {
+  data: KL2Data;
+  onClose: () => void;
+  onRowsChange: (rows: KL2Row[]) => void;
+  onShelterChange: (s: KL2Shelter) => void;
+  onAutoFill: () => void;
+  onSaveBeforePrint?: () => void;
+}) {
+  const [confirmPrint, setConfirmPrint] = useState(false);
   const kota = data.shelter === 'PBG' ? 'Purbalingga' : 'Purwokerto';
   const grand = (() => {
     let nt = 0, t = 0, rpN = 0, rpT = 0;
@@ -591,13 +671,34 @@ function KL2SheetView({ data, onClose, onRowsChange, onShelterChange, onAutoFill
     });
     onRowsChange(next);
   };
+  const handleKlikCetakPdf = () => {
+    onSaveBeforePrint?.();
+    setConfirmPrint(true);
+  };
+  const handleLanjutCetak = () => {
+    setConfirmPrint(false);
+    document.title = `KL2-${data.shelter}-${data.tanggal}-${data.shift}`;
+    window.print();
+  };
   return (
     <div id="kl2-print-area">
       <style>{KL2_CSS}</style>
+      {confirmPrint && (
+        <div className="kl-modal-overlay" role="dialog" aria-modal="true">
+          <div className="kl-modal-box">
+            <p className="kl-modal-title">Data KL2 tersimpan ke storage aplikasi</p>
+            <p className="kl-modal-msg">Apakah akan lanjut mencetak?</p>
+            <div className="kl-modal-actions">
+              <button type="button" onClick={() => setConfirmPrint(false)} className="kl-modal-no">TIDAK</button>
+              <button type="button" onClick={handleLanjutCetak} className="kl-modal-yes">IYA</button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="kl2-no-print">
         <button type="button" onClick={onClose} className="kl2-btn-abu">← KEMBALI</button>
         <button type="button" onClick={onAutoFill} className="kl2-btn-biru">↺ ISI OTOMATIS DARI RIWAYAT HARI INI</button>
-        <button type="button" onClick={() => { document.title = `KL2-${data.shelter}-${data.tanggal}-${data.shift}`; window.print(); }} className="kl2-btn-hijau">🖨 CETAK / SIMPAN PDF (KL2 Landscape)</button>
+        <button type="button" onClick={handleKlikCetakPdf} className="kl2-btn-hijau">🖨 CETAK / SIMPAN PDF (KL2 Landscape)</button>
       </div>
       <div className="kl2-no-print" style={{ alignItems: 'center' }}>
         <label style={{ fontWeight: 800, fontSize: 13 }}>Shelter / Sheet:</label>
@@ -652,7 +753,7 @@ export function KasirScreen({
   const [initialDraft] = useState<Partial<KasirDraft>>(() => readKasirDraft(tglHariIni()));
   const [koridor, setKoridor] = useState(initialDraft.koridor || 'KOR01');
   const [lb, setLb] = useState(initialDraft.lb || 'LB01');
-  // ===== PANEL CADANGAN LBC01 — PENAMBAHAN SAJA, fungsi lain tidak diubah =====
+  const [rit, setRit] = useState(initialDraft.rit || 'R01');
   const [statusPerjalanan, setStatusPerjalanan] = useState('NORMAL');
   const [idPerjalananAsal, setIdPerjalananAsal] = useState('');
   const [titikGanti, setTitikGanti] = useState('TERMINAL_AWAL');
@@ -660,7 +761,6 @@ export function KasirScreen({
   const isCadangan = lb === 'LBC01';
   const tampilPanelCadangan = isCadangan || statusPerjalanan === 'LANJUTAN_SETELAH_PERBAIKAN';
   const statusPerjalananEfektif = tampilPanelCadangan ? statusPerjalanan : 'NORMAL';
-  const [rit, setRit] = useState(initialDraft.rit || 'R01');
   const [shift, setShift] = useState(
     initialDraft.shift ||
       (parseInt(String(initialDraft.rit || 'R01').replace(/\D/g, ''), 10) >= 5
@@ -698,6 +798,8 @@ export function KasirScreen({
   const [showRiwayatSetoran, setShowRiwayatSetoran] = useState<boolean>(false);
   // KL1: tampilkan form KL1
   const [showKL1, setShowKL1] = useState<boolean>(false);
+  const [autoPrintKL1, setAutoPrintKL1] = useState<boolean>(false);
+  const [showSavePrintConfirm, setShowSavePrintConfirm] = useState<boolean>(false);
   // KL2: rekap 1 hari + 1 shift + 1 shelter (10 lambung). Disimpan di HP per tanggal+shift+shelter.
   const [showKL2, setShowKL2] = useState<boolean>(false);
   const [kl2Shelter, setKl2Shelter] = useState<KL2Shelter>('PBG');
@@ -898,11 +1000,8 @@ export function KasirScreen({
 
 
   const idPerjalanan = useMemo(
-    () =>
-      isCadangan && idPerjalananAsal.trim()
-        ? `${koridor}-LBC01${rit}${tanggal.split('-').join('')}-GANTI-${idPerjalananAsal.trim()}`
-        : `${koridor}-${lb}${rit}${tanggal.split('-').join('')}`,
-    [koridor, lb, rit, tanggal, isCadangan, idPerjalananAsal]
+    () => `${koridor}-${lb}${rit}${tanggal.split('-').join('')}`,
+    [koridor, lb, rit, tanggal]
   );
 
 
@@ -1593,7 +1692,6 @@ export function KasirScreen({
 
   const handleSimpan = async () => {
     if (sending) return;
-    // Validasi panel cadangan LBC01 — penambahan saja
     if (isCadangan && !idPerjalananAsal.trim()) {
       showToast('Isi dulu Bus yang diganti (ID Perjalanan Asal) untuk LBC01.', 'warn');
       return;
@@ -1604,6 +1702,8 @@ export function KasirScreen({
     }
     if (existingFailedRecord && matriks.totalPnp === 0 && matriks.subPptPnp === 0 && !adaLF) {
       await kirimKasirKeServer(existingFailedRecord);
+      saveTransactionPdfSimulation(existingFailedRecord);
+      setShowSavePrintConfirm(true);
       return;
     }
     // === NOMOR 3 SAJA: tolak simpan kalau ID_PERJALANAN sudah ada di DB_KASIR ===
@@ -1717,13 +1817,13 @@ export function KasirScreen({
       rincianLostFound: lfDetailText,
       lostFoundData: dataLF,
       keterangan: ketVal,
+      statusKirim: API_KASIR ? 'MENUNGGU_SYNC' : 'TERSIMPAN_LOKAL',
+      waktuCatat: jamSekarangHHMM(),
+      createdAt: nowTs,
       statusPerjalanan: statusPerjalananEfektif,
       idPerjalananAsal: tampilPanelCadangan ? idPerjalananAsal.trim() : '',
       titikGanti: tampilPanelCadangan ? titikGanti : '',
       halteTitikGanti: tampilPanelCadangan ? halteTitikGanti : '',
-      statusKirim: API_KASIR ? 'MENUNGGU_SYNC' : 'TERSIMPAN_LOKAL',
-      waktuCatat: jamSekarangHHMM(),
-      createdAt: nowTs,
     } as unknown as KasirRecord;
 
 
@@ -1736,6 +1836,8 @@ export function KasirScreen({
     setShowNextBtn(true);
 
     await kirimKasirKeServer(item);
+    saveTransactionPdfSimulation(item);
+    setShowSavePrintConfirm(true);
   };
 
 
@@ -1866,17 +1968,187 @@ export function KasirScreen({
     );
   };
 
+  const handleSaveKL1ToStorage = () => {
+    if (!dataKL1) return;
+    try {
+      writeKasirDraft({
+        tanggal,
+        koridor,
+        lb,
+        rit,
+        shift,
+        tunaiPnp,
+        nonTunaiPnp,
+        qrisPnp,
+        tapPnp,
+        siAntengPnp,
+        manualPnp,
+        pptPnp,
+        ket,
+        adaLF,
+        lfJam,
+        lfKategori,
+        lfNamaBarang,
+        lfWarna,
+        lfMerek,
+        lfLokasi,
+        lfDetail,
+        lfFoto1,
+        lfFoto2,
+        lfDitemukanOleh,
+        lfPenerima,
+        lfStatus,
+        lfCatatan,
+      });
+      if (dataKL1.pramujasa.trim()) {
+        const cache = JSON.parse(localStorage.getItem('anteng_pramujasa_by_id') || '{}') as Record<string, string>;
+        cache[idPerjalanan] = dataKL1.pramujasa.trim();
+        localStorage.setItem('anteng_pramujasa_by_id', JSON.stringify(cache));
+      }
+      const kl1Map = JSON.parse(localStorage.getItem('anteng_kl1_saved') || '{}') as Record<string, unknown>;
+      const savedEntry = { ...dataKL1, savedAt: timestampSekarang() };
+      kl1Map[dataKL1.idPerjalanan || idPerjalanan] = savedEntry;
+      localStorage.setItem('anteng_kl1_saved', JSON.stringify(kl1Map));
+      localStorage.setItem('anteng_kl1_last', JSON.stringify(savedEntry));
+      showToast('Data KL1 berhasil disimpan ke storage aplikasi.', 'ok');
+    } catch {
+      showToast('Gagal menyimpan KL1 ke storage lokal.', 'err');
+    }
+  };
+
+  const handleSaveKL2ToStorage = () => {
+    try {
+      localStorage.setItem(kl2StorageKey, JSON.stringify(kl2Rows));
+      const kl2Map = JSON.parse(localStorage.getItem('anteng_kl2_saved') || '{}') as Record<string, unknown>;
+      const savedEntry = { ...dataKL2, savedAt: timestampSekarang() };
+      kl2Map[`${tanggal}_${dataKL2.shift}_${kl2Shelter}`] = savedEntry;
+      localStorage.setItem('anteng_kl2_saved', JSON.stringify(kl2Map));
+      localStorage.setItem('anteng_kl2_last', JSON.stringify(savedEntry));
+      showToast('Data KL2 berhasil disimpan ke storage aplikasi.', 'ok');
+    } catch {
+      showToast('Gagal menyimpan KL2 ke storage lokal.', 'err');
+    }
+  };
+
+  const saveTransactionPdfSimulation = (rec: KasirRecord) => {
+    try {
+      const pdfSimPayload = {
+        idKasirTransaksi: rec.idKasirTransaksi,
+        idPerjalanan: rec.idPerjalanan,
+        tanggal: rec.tanggal,
+        koridor: rec.koridor,
+        noLambung: rec.noLambung,
+        rit: rec.rit,
+        shift: rec.shift || shift,
+        petugasKasir: rec.petugasKasir,
+        pramujasa: pramujasaKL1 || '-',
+        totalPenumpang: rec.totalPenumpang,
+        totalPendapatan: rec.totalPendapatan,
+        terbilang: `# ${terbilangKL1(Number(rec.totalPendapatan) || 0).trim()} Rupiah #`,
+        rincian: {
+          tunai: rec.rincianTunaiPnp,
+          nonTunai: rec.rincianNonTunaiPnp,
+        },
+        kl1Data: dataKL1,
+        savedAt: timestampSekarang(),
+      };
+      const pdfMap = JSON.parse(localStorage.getItem('anteng_kasir_pdf_simulasi') || '{}') as Record<string, unknown>;
+      pdfMap[rec.idPerjalanan || rec.idKasirTransaksi] = pdfSimPayload;
+      localStorage.setItem('anteng_kasir_pdf_simulasi', JSON.stringify(pdfMap));
+      localStorage.setItem('anteng_kasir_pdf_last', JSON.stringify(pdfSimPayload));
+      if (dataKL1) {
+        const kl1Map = JSON.parse(localStorage.getItem('anteng_kl1_saved') || '{}') as Record<string, unknown>;
+        const savedEntry = { ...dataKL1, savedAt: timestampSekarang() };
+        kl1Map[dataKL1.idPerjalanan || rec.idPerjalanan] = savedEntry;
+        localStorage.setItem('anteng_kl1_saved', JSON.stringify(kl1Map));
+        localStorage.setItem('anteng_kl1_last', JSON.stringify(savedEntry));
+      }
+    } catch {
+      // ignore quota error
+    }
+  };
+
   // KL2: kalau mode KL2 aktif, tampilkan hanya KL2 (persis sheet Excel, Landscape, siap print)
   if (showKL2) {
-    return <KL2SheetView data={dataKL2} onClose={() => setShowKL2(false)} onRowsChange={setKl2Rows} onShelterChange={setKl2Shelter} onAutoFill={handleKl2AutoFill} />;
+    return (
+      <KL2SheetView
+        data={dataKL2}
+        onClose={() => setShowKL2(false)}
+        onRowsChange={setKl2Rows}
+        onShelterChange={setKl2Shelter}
+        onAutoFill={handleKl2AutoFill}
+        onSaveBeforePrint={handleSaveKL2ToStorage}
+      />
+    );
   }
   // KL1: kalau mode KL1 aktif, tampilkan hanya KL1 (persis sheet, Landscape, siap print)
   if (showKL1 && dataKL1) {
-    return <KL1SheetView data={dataKL1} onClose={() => setShowKL1(false)} onPramujasaChange={(nama) => { setPramujasaKL1(nama); try { const cache = JSON.parse(localStorage.getItem('anteng_pramujasa_by_id') || '{}') as Record<string, string>; if (nama.trim()) { cache[idPerjalanan] = nama.trim(); localStorage.setItem('anteng_pramujasa_by_id', JSON.stringify(cache)); } } catch {} }} />;
+    return (
+      <KL1SheetView
+        data={dataKL1}
+        onClose={() => {
+          setAutoPrintKL1(false);
+          setShowKL1(false);
+        }}
+        onPramujasaChange={(nama) => {
+          setPramujasaKL1(nama);
+          try {
+            const cache = JSON.parse(localStorage.getItem('anteng_pramujasa_by_id') || '{}') as Record<string, string>;
+            if (nama.trim()) {
+              cache[idPerjalanan] = nama.trim();
+              localStorage.setItem('anteng_pramujasa_by_id', JSON.stringify(cache));
+            }
+          } catch {}
+        }}
+        onSaveBeforePrint={handleSaveKL1ToStorage}
+        autoPrintOnMount={autoPrintKL1}
+        onAutoPrintDone={() => setAutoPrintKL1(false)}
+      />
+    );
   }
 
   return (
     <div className="min-h-screen bg-slate-100 pb-10">
+      {showSavePrintConfirm && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-white rounded-2xl max-w-sm w-full p-5 shadow-xl border-2 border-emerald-500 text-center space-y-3">
+            <p className="text-sm font-extrabold text-emerald-700">
+              Data transaksi &amp; PDF simulasi tersimpan ke storage lokal
+            </p>
+            <p className="text-base font-extrabold text-slate-900">
+              Apakah akan lanjut mencetak?
+            </p>
+            <div className="flex gap-2.5 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowSavePrintConfirm(false)}
+                className="flex-1 py-3 rounded-xl border-2 border-slate-300 bg-white text-slate-700 font-extrabold cursor-pointer hover:bg-slate-50"
+              >
+                TIDAK
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSavePrintConfirm(false);
+                  if (dataKL1) {
+                    setAutoPrintKL1(true);
+                    setShowKL1(true);
+                  } else {
+                    window.print();
+                  }
+                }}
+                className="flex-1 py-3 rounded-xl bg-emerald-600 text-white font-extrabold cursor-pointer hover:bg-emerald-700"
+              >
+                IYA
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="max-w-xl mx-auto bg-white min-h-screen shadow-sm border-x border-slate-200 flex flex-col">
         {/* Header */}
         <div className="bg-gradient-to-br from-violet-600 to-violet-800 text-white p-5 rounded-b-3xl flex items-center gap-4 relative shadow-sm">
@@ -1974,12 +2246,10 @@ export function KasirScreen({
             </div>
           </div>
 
-
-          {/* ===== PANEL CADANGAN LBC01 — muncul otomatis kalau LB = LBC01 ===== */}
           {tampilPanelCadangan && (
             <div className="rounded-2xl border-2 border-amber-400 bg-amber-50 p-3.5 space-y-2.5">
               <p className="font-extrabold text-amber-900">🚌 ARMADA CADANGAN AKTIF — {lb}</p>
-              <p className="text-xs text-amber-800">Bus ini menggantikan bus reguler. Setoran ini adalah segmen LBC01, bukan setoran bus reguler.</p>
+              <p className="text-xs text-amber-800">Bus ini menggantikan bus reguler. Lengkapi keterangan pengganti di bawah.</p>
               <div>
                 <label className="block text-xs font-extrabold text-slate-700 mb-1">Status Perjalanan</label>
                 <select value={statusPerjalanan} onChange={(e) => setStatusPerjalanan(e.target.value)} className="w-full px-2 py-3 rounded-xl border-2 border-slate-800 font-bold text-center bg-white">
@@ -2007,6 +2277,7 @@ export function KasirScreen({
               </div>
             </div>
           )}
+
 
           <div>
             <label className="block text-xs font-extrabold text-center text-slate-700 mb-1">

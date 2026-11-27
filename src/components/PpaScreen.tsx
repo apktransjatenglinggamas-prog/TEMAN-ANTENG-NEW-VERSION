@@ -48,7 +48,6 @@ export function PpaScreen({
   const [koridor, setKoridor] = useState('KOR01');
   const [lb, setLb] = useState('LB01');
   const [rit, setRit] = useState('R01');
-  // ===== PANEL CADANGAN LBC01 — PENAMBAHAN SAJA =====
   const [statusPerjalanan, setStatusPerjalanan] = useState('NORMAL');
   const [idPerjalananAsal, setIdPerjalananAsal] = useState('');
   const [titikGanti, setTitikGanti] = useState('TERMINAL_AWAL');
@@ -72,11 +71,8 @@ export function PpaScreen({
   const [sending, setSending] = useState(false);
 
   const idPerjalanan = useMemo(
-    () =>
-      isCadangan && idPerjalananAsal.trim()
-        ? `${koridor}-LBC01${rit}${tanggal.split('-').join('')}-GANTI-${idPerjalananAsal.trim()}`
-        : `${koridor}-${lb}${rit}${tanggal.split('-').join('')}`,
-    [koridor, lb, rit, tanggal, isCadangan, idPerjalananAsal]
+    () => `${koridor}-${lb}${rit}${tanggal.split('-').join('')}`,
+    [koridor, lb, rit, tanggal]
   );
 
   // ===== ARAH dari MASTER_RIT (bukan MASTER_JADWAL, bukan ketikan manual) =====
@@ -355,13 +351,8 @@ export function PpaScreen({
 
   const handleSimpan = async () => {
     if (sending) return;
-    // Validasi panel cadangan LBC01 — penambahan saja
     if (isCadangan && !idPerjalananAsal.trim()) {
       showToast('Isi dulu Bus yang diganti (ID Perjalanan Asal) untuk LBC01.', 'warn');
-      return;
-    }
-    if (isCadangan && titikGanti === 'TENGAH_JALAN' && !halteTitikGanti.trim()) {
-      showToast('Isi dulu Halte Titik Ganti untuk LBC01.', 'warn');
       return;
     }
     // Duplikat: ID + POS + ARAH. Cek riwayat lokal (kunci lengkap).
@@ -426,11 +417,10 @@ export function PpaScreen({
       rit,
       polaOperasional: polaVal,
       status: 'Tervalidasi',
-      // ===== 4 field cadangan — penambahan saja =====
       statusPerjalanan: statusPerjalananEfektif,
-      idPerjalananAsal: tampilPanelCadangan ? idPerjalananAsal.trim().toUpperCase() : '',
+      idPerjalananAsal: tampilPanelCadangan ? idPerjalananAsal.trim() : '',
       titikGanti: tampilPanelCadangan ? titikGanti : '',
-      halteTitikGanti: tampilPanelCadangan ? halteTitikGanti.trim().toUpperCase() : '',
+      halteTitikGanti: tampilPanelCadangan ? halteTitikGanti : '',
     } as PpaRecord;
 
     await kirimKeServer(pl);
@@ -440,10 +430,6 @@ export function PpaScreen({
     setTanggal(tglHariIni());
     setLb('LB01');
     setRit('R01');
-    setStatusPerjalanan('NORMAL');
-    setIdPerjalananAsal('');
-    setTitikGanti('TERMINAL_AWAL');
-    setHalteTitikGanti('');
     setAllPnp('0');
     setNaikPnp('0');
     setTurunPnp('0');
@@ -558,31 +544,25 @@ export function PpaScreen({
             </div>
           </div>
 
-          {/* ===== PANEL CADANGAN LBC01 — muncul otomatis kalau LB = LBC01 ===== */}
           {tampilPanelCadangan && (
-            <div className="rounded-2xl border-2 border-amber-400 bg-amber-50 p-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <span className="text-xl">🚌</span>
-                <div>
-                  <h3 className="font-extrabold text-amber-900 text-sm">ARMADA CADANGAN AKTIF — {lb}</h3>
-                  <p className="text-xs text-amber-800">Bus ini menggantikan bus reguler. Lengkapi keterangan pengganti di bawah.</p>
-                </div>
+            <div className="rounded-2xl border-2 border-amber-400 bg-amber-50 p-3.5 space-y-2.5">
+              <p className="font-extrabold text-amber-900">🚌 ARMADA CADANGAN AKTIF — {lb}</p>
+              <p className="text-xs text-amber-800">Bus ini menggantikan bus reguler. Lengkapi keterangan pengganti di bawah.</p>
+              <div>
+                <label className="block text-xs font-extrabold text-slate-700 mb-1">Status Perjalanan</label>
+                <select value={statusPerjalanan} onChange={(e) => setStatusPerjalanan(e.target.value)} className="w-full px-2 py-3 rounded-xl border-2 border-slate-800 font-bold text-center bg-white">
+                  <option value="PENGGANTI">PENGGANTI</option>
+                  <option value="LANJUTAN_SETELAH_PERBAIKAN">LANJUTAN_SETELAH_PERBAIKAN</option>
+                </select>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-extrabold text-slate-700 mb-1">Status Perjalanan</label>
-                  <select value={statusPerjalanan} onChange={(e) => setStatusPerjalanan(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border-2 border-slate-800 bg-white font-bold">
-                    <option value="PENGGANTI">PENGGANTI</option>
-                    <option value="LANJUTAN_SETELAH_PERBAIKAN">LANJUTAN_SETELAH_PERBAIKAN</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-extrabold text-slate-700 mb-1">Menggantikan Bus (ID Asal)</label>
-                  <input type="text" placeholder="Contoh: KOR01-LB05R0320261127" value={idPerjalananAsal} onChange={(e) => setIdPerjalananAsal(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border-2 border-slate-800 bg-white font-mono-num font-bold text-center" />
-                </div>
+              <div>
+                <label className="block text-xs font-extrabold text-slate-700 mb-1">Menggantikan Bus (ID Perjalanan Asal)</label>
+                <input type="text" placeholder="Contoh: KOR01-LB05R0320261127" value={idPerjalananAsal} onChange={(e) => setIdPerjalananAsal(e.target.value)} className="w-full px-3 py-3 rounded-xl border-2 border-slate-800 bg-white font-mono-num font-bold text-center" />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="block text-xs font-extrabold text-slate-700 mb-1">Titik Ganti</label>
-                  <select value={titikGanti} onChange={(e) => setTitikGanti(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border-2 border-slate-800 bg-white font-bold">
+                  <select value={titikGanti} onChange={(e) => setTitikGanti(e.target.value)} className="w-full px-2 py-3 rounded-xl border-2 border-slate-800 font-bold text-center bg-white">
                     <option value="TERMINAL_AWAL">TERMINAL_AWAL</option>
                     <option value="TENGAH_JALAN">TENGAH_JALAN</option>
                     <option value="AKHIR_RIT">AKHIR_RIT</option>
@@ -590,7 +570,7 @@ export function PpaScreen({
                 </div>
                 <div>
                   <label className="block text-xs font-extrabold text-slate-700 mb-1">Halte Titik Ganti</label>
-                  <input type="text" placeholder="Nama halte (jika tengah jalan)" value={halteTitikGanti} onChange={(e) => setHalteTitikGanti(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border-2 border-slate-800 bg-white font-bold text-center" />
+                  <input type="text" placeholder="Nama halte (jika tengah jalan)" value={halteTitikGanti} onChange={(e) => setHalteTitikGanti(e.target.value)} className="w-full px-3 py-3 rounded-xl border-2 border-slate-800 bg-white font-bold text-center" />
                 </div>
               </div>
             </div>

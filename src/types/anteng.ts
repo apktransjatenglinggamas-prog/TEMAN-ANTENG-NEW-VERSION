@@ -55,6 +55,10 @@ export interface TimerRecord {
   catatan: string;
   status: 'PENDING' | 'TERVALIDASI' | 'GAGAL_KIRIM';
   waktuKirim: string;
+  statusPerjalanan?: string;
+  idPerjalananAsal?: string;
+  titikGanti?: string;
+  halteTitikGanti?: string;
 }
 
 export interface TimerLookupData {
@@ -97,6 +101,10 @@ export interface PpaRecord {
   rit: string;
   polaOperasional: string;
   status: 'Tervalidasi' | 'GAGAL_KIRIM';
+  statusPerjalanan?: string;
+  idPerjalananAsal?: string;
+  titikGanti?: string;
+  halteTitikGanti?: string;
 }
 
 export type KategoriKey = 'umum' | 'buruh' | 'pelajar' | 'lansia' | 'disabilitas' | 'veteran';
@@ -128,10 +136,6 @@ export interface PramujasaRecord {
   namaPramudi?: string;
   status: 'SEMENTARA' | 'TERVALIDASI' | 'GAGAL_KIRIM';
   waktuKirim: string;
-  statusPerjalanan?: string;
-  idPerjalananAsal?: string;
-  titikGanti?: string;
-  halteTitikGanti?: string;
   // Legacy compatibility fields for reading older stored items
   metodeBayar?: string;
   umum?: number;
@@ -140,6 +144,10 @@ export interface PramujasaRecord {
   lansia?: number;
   disabilitas?: number;
   veteran?: number;
+  statusPerjalanan?: string;
+  idPerjalananAsal?: string;
+  titikGanti?: string;
+  halteTitikGanti?: string;
 }
 
 export interface LostFoundData {
@@ -201,6 +209,10 @@ export interface KasirRecord {
   statusKirim: 'TERKIRIM' | 'GAGAL_KIRIM' | 'MENUNGGU_SYNC' | 'TERSIMPAN_LOKAL';
   waktuCatat: string;
   createdAt: string;
+  statusPerjalanan?: string;
+  idPerjalananAsal?: string;
+  titikGanti?: string;
+  halteTitikGanti?: string;
 }
 
 export interface LostItemDisplay {
