@@ -66,6 +66,9 @@ interface KasirDraft {
   shift?: string;
   tunaiPnp: KategoriCounts;
   nonTunaiPnp: KategoriCounts;
+  qrisPnp?: KategoriCounts;
+  tapPnp?: KategoriCounts;
+  siAntengPnp?: KategoriCounts;
   manualPnp: KategoriCounts;
   pptPnp: KategoriCounts;
   ket: string;
@@ -288,23 +291,23 @@ function terbilangKL1(n: number): string {
   if (nn < 1000000000) return (terbilangKL1(Math.floor(nn / 1000000)) + ' Juta ' + terbilangKL1(nn % 1000000)).trim();
   return '';
 }
-export interface KL1RowData { label: string; tunaiPnp: number; tunaiRp: number; nonTunaiPnp: number; nonTunaiRp: number; manualPnp: number; manualRp: number; }
+export interface KL1RowData { label: string; eTickPnp: number; eTickRp: number; manPnp: number; manRp: number; qrisPnp: number; qrisRp: number; tapPnp: number; tapRp: number; siAntengPnp: number; siAntengRp: number; }
 export interface KL1Data { idPerjalanan: string; pool: string; lambung: string; shift: string; hari: string; tanggal: string; tabel1: KL1RowData[]; tabel2: KL1RowData[]; totalPnp: number; totalRp: number; terbilang: string; adminKasir: string; pramujasa: string; keterangan: string; }
 const KL1_CSS = `
   #kl1-print-area { background:#e5e7eb; padding:16px; min-height:100vh; }
   .kl1-no-print { display:flex; gap:8px; max-width:1000px; margin:0 auto 12px; }
   .kl1-btn-abu { flex:1; padding:12px; border-radius:12px; background:#fff; font-weight:800; border:2px solid #cbd5e1; cursor:pointer; }
   .kl1-btn-hijau { flex:2; padding:12px; border-radius:12px; background:#059669; color:#fff; font-weight:800; border:none; cursor:pointer; }
-  .kl1-kertas { background:#fff; max-width:780px; margin:0 auto; padding:14px 16px; font-family:"Times New Roman",Times,serif; color:#000; }
+  .kl1-kertas { background:#fff; max-width:980px; margin:0 auto; padding:12px 12px; font-family:"Times New Roman",Times,serif; color:#000; }
   .kl1-head-kanan { text-align:right; font-size:13px; font-weight:700; }
   .kl1-judul { text-align:center; font-size:15px; font-weight:800; text-decoration:underline; margin:8px 0 14px; }
   .kl1-meta { font-size:14px; margin-bottom:12px; }
   .kl1-meta td:first-child { width:180px; font-weight:700; }
   .kl1-meta td { padding:1px 4px; }
-  .kl1-table { width:100%; border-collapse:collapse; font-size:11px; }
-  .kl1-th, .kl1-td { border:1.5px solid #000; padding:5px 6px; text-align:center; }
-  .kl1-kiri { text-align:left; font-weight:700; width:130px; }
-  .kl1-sub { font-size:11px; }
+  .kl1-table { width:100%; border-collapse:collapse; font-size:10px; }
+  .kl1-th, .kl1-td { border:1.5px solid #000; padding:3px 2px; text-align:center; }
+  .kl1-kiri { text-align:left; font-weight:700; width:110px; }
+  .kl1-sub { font-size:10px; }
   .kl1-total-head { font-size:11px; width:120px; background:#f1f5f9; }
   .kl1-total { font-weight:800; font-size:13px; }
   .kl1-bold { font-weight:700; }
@@ -325,18 +328,27 @@ const KL1_CSS = `
   }
 `;
 function KL1Tabel({ rows, totalPnp, totalRp }: { rows: KL1RowData[]; totalPnp: number; totalRp: number }) {
+  const totalRow = (r: KL1RowData) => r.eTickPnp + r.manPnp + r.qrisPnp + r.tapPnp + r.siAntengPnp;
+  const totalRowRp = (r: KL1RowData) => r.eTickRp + r.manRp + r.qrisRp + r.tapRp + r.siAntengRp;
   return (
     <table className="kl1-table">
       <thead>
         <tr>
-          <th rowSpan={2} className="kl1-th kl1-kiri">KLASIFIKASI</th>
-          {rows.map((r) => (<th key={r.label} colSpan={3} className="kl1-th">{r.label}</th>))}
-          <th rowSpan={2} className="kl1-th kl1-total-head">TOTAL PENUMPANG<br />DAN<br />SETORAN TUNAI</th>
+          <th rowSpan={3} className="kl1-th kl1-kiri">KLASIFIKASI</th>
+          {rows.map((r) => (<th key={r.label} colSpan={5} className="kl1-th">{r.label}</th>))}
+          <th rowSpan={3} className="kl1-th kl1-total-head">TOTAL PENUMPANG<br />DAN<br />SETORAN TUNAI</th>
         </tr>
         <tr>
           {rows.map((r) => (
             <Fragment key={r.label}>
-              <th className="kl1-th kl1-sub">TUNAI</th><th className="kl1-th kl1-sub">NON TUNAI</th><th className="kl1-th kl1-sub">MANUAL</th>
+              <th colSpan={2} className="kl1-th kl1-sub">TUNAI</th><th colSpan={3} className="kl1-th kl1-sub">NON TUNAI</th>
+            </Fragment>
+          ))}
+        </tr>
+        <tr>
+          {rows.map((r) => (
+            <Fragment key={r.label}>
+              <th className="kl1-th kl1-sub">E-TICK</th><th className="kl1-th kl1-sub">MAN</th><th className="kl1-th kl1-sub">QRIS</th><th className="kl1-th kl1-sub">TAP</th><th className="kl1-th kl1-sub">SI ANTENG</th>
             </Fragment>
           ))}
         </tr>
@@ -346,7 +358,7 @@ function KL1Tabel({ rows, totalPnp, totalRp }: { rows: KL1RowData[]; totalPnp: n
           <td className="kl1-td kl1-kiri">PENUMPANG</td>
           {rows.map((r) => (
             <Fragment key={r.label}>
-              <td className="kl1-td">{r.tunaiPnp || ''}</td><td className="kl1-td">{r.nonTunaiPnp || ''}</td><td className="kl1-td">{r.manualPnp || ''}</td>
+              <td className="kl1-td">{r.eTickPnp || ''}</td><td className="kl1-td">{r.manPnp || ''}</td><td className="kl1-td">{r.qrisPnp || ''}</td><td className="kl1-td">{r.tapPnp || ''}</td><td className="kl1-td">{r.siAntengPnp || ''}</td>
             </Fragment>
           ))}
           <td className="kl1-td kl1-total" rowSpan={4}>{totalPnp || ''}<br /><span style={{ fontSize: 11, fontWeight: 700 }}>{totalRp ? formatRupiah(totalRp) : ''}</span></td>
@@ -355,7 +367,7 @@ function KL1Tabel({ rows, totalPnp, totalRp }: { rows: KL1RowData[]; totalPnp: n
           <td className="kl1-td kl1-kiri">PENDAPATAN</td>
           {rows.map((r) => (
             <Fragment key={r.label}>
-              <td className="kl1-td">{r.tunaiRp ? formatRupiah(r.tunaiRp) : ''}</td><td className="kl1-td">{r.nonTunaiRp ? formatRupiah(r.nonTunaiRp) : ''}</td><td className="kl1-td">{r.manualRp ? formatRupiah(r.manualRp) : ''}</td>
+              <td className="kl1-td">{r.eTickRp ? formatRupiah(r.eTickRp) : ''}</td><td className="kl1-td">{r.manRp ? formatRupiah(r.manRp) : ''}</td><td className="kl1-td">{r.qrisRp ? formatRupiah(r.qrisRp) : ''}</td><td className="kl1-td">{r.tapRp ? formatRupiah(r.tapRp) : ''}</td><td className="kl1-td">{r.siAntengRp ? formatRupiah(r.siAntengRp) : ''}</td>
             </Fragment>
           ))}
         </tr>
@@ -363,7 +375,7 @@ function KL1Tabel({ rows, totalPnp, totalRp }: { rows: KL1RowData[]; totalPnp: n
           <td className="kl1-td kl1-kiri">JUMLAH PENUMPANG</td>
           {rows.map((r) => (
             <Fragment key={r.label}>
-              <td className="kl1-td kl1-bold">{(r.tunaiPnp + r.nonTunaiPnp + r.manualPnp) || ''}</td><td className="kl1-td kl1-abu">-</td><td className="kl1-td kl1-abu">-</td>
+              <td className="kl1-td kl1-bold">{totalRow(r) || ''}</td><td className="kl1-td kl1-abu">-</td><td className="kl1-td kl1-abu">-</td><td className="kl1-td kl1-abu">-</td><td className="kl1-td kl1-abu">-</td>
             </Fragment>
           ))}
         </tr>
@@ -371,7 +383,7 @@ function KL1Tabel({ rows, totalPnp, totalRp }: { rows: KL1RowData[]; totalPnp: n
           <td className="kl1-td kl1-kiri">JUMLAH PENDAPATAN</td>
           {rows.map((r) => (
             <Fragment key={r.label}>
-              <td className="kl1-td kl1-bold">{(r.tunaiRp + r.nonTunaiRp + r.manualRp) ? formatRupiah(r.tunaiRp + r.nonTunaiRp + r.manualRp) : ''}</td><td className="kl1-td kl1-abu">-</td><td className="kl1-td kl1-abu">-</td>
+              <td className="kl1-td kl1-bold">{totalRowRp(r) ? formatRupiah(totalRowRp(r)) : ''}</td><td className="kl1-td kl1-abu">-</td><td className="kl1-td kl1-abu">-</td><td className="kl1-td kl1-abu">-</td><td className="kl1-td kl1-abu">-</td>
             </Fragment>
           ))}
         </tr>
@@ -495,6 +507,22 @@ export function KasirScreen({
   const [nonTunaiPnp, setNonTunaiPnp] = useState<KategoriCounts>(
     () => initialDraft.nonTunaiPnp || emptyKategoriCounts()
   );
+  // KL1 TERBARU: NON TUNAI dipecah QRIS + TAP + SI ANTENG. Total Non-Tunai = ketiganya.
+  // Data lama (hanya ada total Non-Tunai, tanpa rincian) -> seluruh total dianggap QRIS,
+  // supaya total di KL1 lama tetap cocok dan tidak hilang.
+  const initialSub = (field: 'qrisPnp' | 'tapPnp' | 'siAntengPnp') => {
+    const d = initialDraft as unknown as Record<string, KategoriCounts | undefined>;
+    const v = d[field] || emptyKategoriCounts();
+    return v;
+  };
+  const [qrisPnp, setQrisPnp] = useState<KategoriCounts>(() => {
+    const q = initialSub('qrisPnp'); const t = initialSub('tapPnp'); const s = initialSub('siAntengPnp');
+    const sumSub = KATEGORI_LIST.reduce((a, k) => a + (q[k.key] || 0) + (t[k.key] || 0) + (s[k.key] || 0), 0);
+    if (sumSub === 0) return { ...(initialDraft.nonTunaiPnp || emptyKategoriCounts()) };
+    return q;
+  });
+  const [tapPnp, setTapPnp] = useState<KategoriCounts>(() => initialSub('tapPnp'));
+  const [siAntengPnp, setSiAntengPnp] = useState<KategoriCounts>(() => initialSub('siAntengPnp'));
   const [manualPnp, setManualPnp] = useState<KategoriCounts>(
     () => initialDraft.manualPnp || emptyKategoriCounts()
   );
@@ -538,6 +566,9 @@ export function KasirScreen({
       shift,
       tunaiPnp,
       nonTunaiPnp,
+      qrisPnp,
+      tapPnp,
+      siAntengPnp,
       manualPnp,
       pptPnp,
       ket,
@@ -564,6 +595,9 @@ export function KasirScreen({
     shift,
     tunaiPnp,
     nonTunaiPnp,
+    qrisPnp,
+    tapPnp,
+    siAntengPnp,
     manualPnp,
     pptPnp,
     ket,
@@ -609,17 +643,29 @@ export function KasirScreen({
     const tunaiRp = emptyKategoriCounts();
     const nonTunaiRp = emptyKategoriCounts();
     const manualRp = emptyKategoriCounts();
+    const qrisRp = emptyKategoriCounts();
+    const tapRp = emptyKategoriCounts();
+    const siAntengRp = emptyKategoriCounts();
     let subTunaiPnp = 0;
     let subTunaiRp = 0;
     let subNonTunaiPnp = 0;
     let subNonTunaiRp = 0;
+    let subQrisPnp = 0;
+    let subQrisRp = 0;
+    let subTapPnp = 0;
+    let subTapRp = 0;
+    let subSiAntengPnp = 0;
+    let subSiAntengRp = 0;
     let subManualPnp = 0;
     let subManualRp = 0;
     let subPptPnp = 0;
 
     for (const k of KATEGORI_LIST) {
       const tp = Math.max(0, tunaiPnp[k.key] || 0);
-      const ntp = Math.max(0, nonTunaiPnp[k.key] || 0);
+      const qp = Math.max(0, qrisPnp[k.key] || 0);
+      const tap = Math.max(0, tapPnp[k.key] || 0);
+      const sia = Math.max(0, siAntengPnp[k.key] || 0);
+      const ntp = qp + tap + sia;
       const mp = Math.max(0, manualPnp[k.key] || 0);
       const pp = Math.max(0, pptPnp[k.key] || 0);
       const tr = tp * k.tarif;
@@ -628,10 +674,19 @@ export function KasirScreen({
       tunaiRp[k.key] = tr;
       nonTunaiRp[k.key] = ntr;
       manualRp[k.key] = mr;
+      qrisRp[k.key] = qp * k.tarif;
+      tapRp[k.key] = tap * k.tarif;
+      siAntengRp[k.key] = sia * k.tarif;
       subTunaiPnp += tp;
       subTunaiRp += tr;
       subNonTunaiPnp += ntp;
       subNonTunaiRp += ntr;
+      subQrisPnp += qp;
+      subQrisRp += qp * k.tarif;
+      subTapPnp += tap;
+      subTapRp += tap * k.tarif;
+      subSiAntengPnp += sia;
+      subSiAntengRp += sia * k.tarif;
       subManualPnp += mp;
       subManualRp += mr;
       subPptPnp += pp;
@@ -641,10 +696,19 @@ export function KasirScreen({
       tunaiRp,
       nonTunaiRp,
       manualRp,
+      qrisRp,
+      tapRp,
+      siAntengRp,
       subTunaiPnp,
       subTunaiRp,
       subNonTunaiPnp,
       subNonTunaiRp,
+      subQrisPnp,
+      subQrisRp,
+      subTapPnp,
+      subTapRp,
+      subSiAntengPnp,
+      subSiAntengRp,
       subManualPnp,
       subManualRp,
       subPptPnp,
@@ -653,7 +717,7 @@ export function KasirScreen({
       totalPnp: subTunaiPnp + subNonTunaiPnp + subManualPnp,
       totalSetoran: subTunaiRp + subNonTunaiRp + subManualRp,
     };
-  }, [tunaiPnp, nonTunaiPnp, manualPnp, pptPnp]);
+  }, [tunaiPnp, nonTunaiPnp, qrisPnp, tapPnp, siAntengPnp, manualPnp, pptPnp]);
 
 
 
@@ -666,12 +730,15 @@ export function KasirScreen({
     const getRow = (key: KategoriKey): KL1RowData => {
       const kat = KATEGORI_LIST.find((x) => x.key === key)!;
       if (pakaiInput) {
-        const t = tunaiPnp[key] || 0; const nt = nonTunaiPnp[key] || 0; const m = manualPnp[key] || 0;
-        return { label: kat.label, tunaiPnp: t, tunaiRp: t * kat.tarif, nonTunaiPnp: nt, nonTunaiRp: nt * kat.tarif, manualPnp: m, manualRp: m * kat.tarif };
+        const t = tunaiPnp[key] || 0; const m = manualPnp[key] || 0;
+        const q = qrisPnp[key] || 0; const tap = tapPnp[key] || 0; const sia = siAntengPnp[key] || 0;
+        return { label: kat.label, eTickPnp: t, eTickRp: t * kat.tarif, manPnp: m, manRp: m * kat.tarif, qrisPnp: q, qrisRp: q * kat.tarif, tapPnp: tap, tapRp: tap * kat.tarif, siAntengPnp: sia, siAntengRp: sia * kat.tarif };
       }
       const loose = saved as unknown as Record<string, Record<string, number> | undefined>;
       const t = Number(saved?.rincianTunaiPnp?.[key]) || 0; const nt = Number(saved?.rincianNonTunaiPnp?.[key]) || 0; const m = Number(loose.rincianManualPnp?.[key]) || 0;
-      return { label: kat.label, tunaiPnp: t, tunaiRp: t * kat.tarif, nonTunaiPnp: nt, nonTunaiRp: nt * kat.tarif, manualPnp: m, manualRp: m * kat.tarif };
+      let q = Number(loose.rincianQrisPnp?.[key]) || 0; let tap = Number(loose.rincianTapPnp?.[key]) || 0; let sia = Number(loose.rincianSiAntengPnp?.[key]) || 0;
+      if (q + tap + sia === 0 && nt > 0) q = nt; // data lama tanpa rincian -> anggap QRIS supaya total cocok
+      return { label: kat.label, eTickPnp: t, eTickRp: t * kat.tarif, manPnp: m, manRp: m * kat.tarif, qrisPnp: q, qrisRp: q * kat.tarif, tapPnp: tap, tapRp: tap * kat.tarif, siAntengPnp: sia, siAntengRp: sia * kat.tarif };
     };
     const tabel1 = [getRow('umum'), getRow('pelajar'), getRow('buruh')];
     const tabel2 = [getRow('veteran'), getRow('disabilitas'), getRow('lansia')];
@@ -687,7 +754,7 @@ export function KasirScreen({
       terbilang: `# ${terbilangKL1(totalRp).trim()} Rupiah #`,
       adminKasir: petugasNama, pramujasa: pramujasaKL1, keterangan: pakaiInput ? (ket.trim() || '-') : (saved?.keterangan || '-'),
     };
-  }, [riwayat, idPerjalanan, matriks, tunaiPnp, nonTunaiPnp, manualPnp, koridor, lb, shift, tanggal, petugasNama, ket, pramujasaKL1]);
+  }, [riwayat, idPerjalanan, matriks, tunaiPnp, nonTunaiPnp, qrisPnp, tapPnp, siAntengPnp, manualPnp, koridor, lb, shift, tanggal, petugasNama, ket, pramujasaKL1]);
 
   // KL1 TTD PRAMUJASA — OTOMATIS seperti nama petugas kasir:
   // Dijemput SEJAK ID_PERJALANAN terbentuk (bukan baru pas KL1 dibuka), jadi pas KL1
@@ -1048,7 +1115,7 @@ export function KasirScreen({
 
 
   const updatePnp = (
-    jenis: 'tunai' | 'nonTunai' | 'manual' | 'ppt',
+    jenis: 'tunai' | 'nonTunai' | 'manual' | 'ppt' | 'qris' | 'tap' | 'siAnteng',
     key: KategoriKey,
     val: string
   ) => {
@@ -1056,6 +1123,9 @@ export function KasirScreen({
     if (jenis === 'tunai') setTunaiPnp((prev) => ({ ...prev, [key]: n }));
     else if (jenis === 'nonTunai') setNonTunaiPnp((prev) => ({ ...prev, [key]: n }));
     else if (jenis === 'manual') setManualPnp((prev) => ({ ...prev, [key]: n }));
+    else if (jenis === 'qris') { setQrisPnp((prev) => ({ ...prev, [key]: n })); setNonTunaiPnp((prev) => ({ ...prev, [key]: n + (tapPnp[key] || 0) + (siAntengPnp[key] || 0) })); }
+    else if (jenis === 'tap') { setTapPnp((prev) => ({ ...prev, [key]: n })); setNonTunaiPnp((prev) => ({ ...prev, [key]: (qrisPnp[key] || 0) + n + (siAntengPnp[key] || 0) })); }
+    else if (jenis === 'siAnteng') { setSiAntengPnp((prev) => ({ ...prev, [key]: n })); setNonTunaiPnp((prev) => ({ ...prev, [key]: (qrisPnp[key] || 0) + (tapPnp[key] || 0) + n })); }
     else setPptPnp((prev) => ({ ...prev, [key]: n }));
   };
 
@@ -1117,6 +1187,24 @@ export function KasirScreen({
     NONTUNAI__LANSIA: rec.rincianNonTunaiPnp?.lansia || 0,
     NONTUNAI__VETERAN: rec.rincianNonTunaiPnp?.veteran || 0,
     NONTUNAI__DISABILITAS: rec.rincianNonTunaiPnp?.disabilitas || 0,
+    QRIS_UMUM: (rec as unknown as Record<string, Record<string, number> | undefined>).rincianQrisPnp?.umum || 0,
+    QRIS_PELAJAR: (rec as unknown as Record<string, Record<string, number> | undefined>).rincianQrisPnp?.pelajar || 0,
+    QRIS_BURUH: (rec as unknown as Record<string, Record<string, number> | undefined>).rincianQrisPnp?.buruh || 0,
+    QRIS_LANSIA: (rec as unknown as Record<string, Record<string, number> | undefined>).rincianQrisPnp?.lansia || 0,
+    QRIS_VETERAN: (rec as unknown as Record<string, Record<string, number> | undefined>).rincianQrisPnp?.veteran || 0,
+    QRIS_DISABILITAS: (rec as unknown as Record<string, Record<string, number> | undefined>).rincianQrisPnp?.disabilitas || 0,
+    TAP_UMUM: (rec as unknown as Record<string, Record<string, number> | undefined>).rincianTapPnp?.umum || 0,
+    TAP_PELAJAR: (rec as unknown as Record<string, Record<string, number> | undefined>).rincianTapPnp?.pelajar || 0,
+    TAP_BURUH: (rec as unknown as Record<string, Record<string, number> | undefined>).rincianTapPnp?.buruh || 0,
+    TAP_LANSIA: (rec as unknown as Record<string, Record<string, number> | undefined>).rincianTapPnp?.lansia || 0,
+    TAP_VETERAN: (rec as unknown as Record<string, Record<string, number> | undefined>).rincianTapPnp?.veteran || 0,
+    TAP_DISABILITAS: (rec as unknown as Record<string, Record<string, number> | undefined>).rincianTapPnp?.disabilitas || 0,
+    SI_ANTENG_UMUM: (rec as unknown as Record<string, Record<string, number> | undefined>).rincianSiAntengPnp?.umum || 0,
+    SI_ANTENG_PELAJAR: (rec as unknown as Record<string, Record<string, number> | undefined>).rincianSiAntengPnp?.pelajar || 0,
+    SI_ANTENG_BURUH: (rec as unknown as Record<string, Record<string, number> | undefined>).rincianSiAntengPnp?.buruh || 0,
+    SI_ANTENG_LANSIA: (rec as unknown as Record<string, Record<string, number> | undefined>).rincianSiAntengPnp?.lansia || 0,
+    SI_ANTENG_VETERAN: (rec as unknown as Record<string, Record<string, number> | undefined>).rincianSiAntengPnp?.veteran || 0,
+    SI_ANTENG_DISABILITAS: (rec as unknown as Record<string, Record<string, number> | undefined>).rincianSiAntengPnp?.disabilitas || 0,
     MANUAL_UMUM: (rec as unknown as Record<string, Record<string, number> | undefined>).rincianManualPnp?.umum || 0,
     MANUAL_PELAJAR: (rec as unknown as Record<string, Record<string, number> | undefined>).rincianManualPnp?.pelajar || 0,
     MANUAL_BURUH: (rec as unknown as Record<string, Record<string, number> | undefined>).rincianManualPnp?.buruh || 0,
@@ -1332,6 +1420,12 @@ export function KasirScreen({
       rincianTunaiRp: { ...matriks.tunaiRp },
       rincianNonTunaiPnp: { ...nonTunaiPnp },
       rincianNonTunaiRp: { ...matriks.nonTunaiRp },
+      rincianQrisPnp: { ...qrisPnp },
+      rincianQrisRp: { ...matriks.qrisRp },
+      rincianTapPnp: { ...tapPnp },
+      rincianTapRp: { ...matriks.tapRp },
+      rincianSiAntengPnp: { ...siAntengPnp },
+      rincianSiAntengRp: { ...matriks.siAntengRp },
       rincianManualPnp: { ...manualPnp },
       rincianManualRp: { ...matriks.manualRp },
       rincianPptPnp: { ...pptPnp },
@@ -1361,6 +1455,9 @@ export function KasirScreen({
     setTanggal(tglHariIni());
     setTunaiPnp(emptyKategoriCounts());
     setNonTunaiPnp(emptyKategoriCounts());
+    setQrisPnp(emptyKategoriCounts());
+    setTapPnp(emptyKategoriCounts());
+    setSiAntengPnp(emptyKategoriCounts());
     setManualPnp(emptyKategoriCounts());
     setPptPnp(emptyKategoriCounts());
     setShift('SHIFT 1');
@@ -1431,6 +1528,21 @@ export function KasirScreen({
                     Tarif: {formatRupiah(jenis === 'ppt' ? 0 : kat.tarif)}
                   </span>
                 </div>
+                {jenis === 'nonTunai' ? (
+                  <div>
+                    <div className="grid grid-cols-3 gap-2">
+                      {([['qris', 'QRIS', qrisPnp], ['tap', 'TAP', tapPnp], ['siAnteng', 'SI ANTENG', siAntengPnp]] as const).map(([sub, labelSub, stateSub]) => (
+                        <div key={sub}>
+                          <label className="block text-[11px] font-extrabold text-slate-600 mb-1 text-center">{labelSub}</label>
+                          <input type="number" min={0} placeholder="0" value={stateSub[kat.key] || ''} onChange={(e) => updatePnp(sub, kat.key, e.target.value)} className="w-full px-2 py-2 rounded-xl border-2 border-slate-700 bg-white font-mono-num font-extrabold text-center text-sm" />
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-2 flex justify-between items-center bg-sky-50 border border-sky-200 rounded-lg px-2 py-1.5 text-xs font-extrabold text-sky-900">
+                      <span>Non-Tunai {kat.label} (QRIS+TAP+SI ANTENG)</span><span className="font-mono-num">{nonTunaiPnp[kat.key] || 0} org · {formatRupiah(matriks.nonTunaiRp[kat.key] || 0)}</span>
+                    </div>
+                  </div>
+                ) : (
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="block text-[11px] font-extrabold text-slate-600 mb-1">
@@ -1457,6 +1569,7 @@ export function KasirScreen({
                     />
                   </div>
                 </div>
+                )}
               </div>
             ))}
           </div>
